@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SahaAR | KMZ Boru Aksı & İrtifak Kontrolü</title>
+  <title>SahaAR | 3D Topografik KMZ Boru Aksı & İrtifak Kontrolü</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +44,7 @@
       pointer-events: none !important;
     }
     .glass {
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.84);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -84,13 +84,13 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-extrabold tracking-tight text-white">SahaAR <span class="text-amber-400">DGBH</span></h1>
-          <p class="text-xs text-slate-400">KMZ / KML Boru Aksı & İrtifak Görüntüleyici</p>
+          <h1 class="text-xl font-extrabold tracking-tight text-white">SahaAR <span class="text-amber-400">3D-DEM</span></h1>
+          <p class="text-xs text-slate-400">Gerçek Arazi Kotu (DEM) Eşleşmeli KMZ AR</p>
         </div>
       </div>
 
       <p class="text-sm text-slate-300 leading-relaxed mb-6">
-        Sahadaki boru aksını ve irtifak sınırlarını arazi eğimi ve kot farkı desteğiyle telefon kamerasında görmek için <strong>.kmz</strong> veya <strong>.kml</strong> dosyanızı seçin.
+        Bulunduğunuz noktanın ve boru hattının <strong>gerçek deniz seviyesi kotunu (DEM)</strong> harita sunucusundan otomatik çekerek çizgileri vadi ve yamaçlara birebir oturtur.
       </p>
 
       <label class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-bold py-4 px-5 rounded-2xl cursor-pointer transition shadow-lg shadow-amber-500/25 mb-3">
@@ -106,8 +106,8 @@
       </button>
 
       <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-        <span>Arazi Eğimi & 3D Zemin Hizalama</span>
-        <span class="mono text-amber-400/90">v2.3 Slope-AR</span>
+        <span>Canlı Topografik Kot (SRTM DEM)</span>
+        <span class="mono text-amber-400/90">v3.0 Topo-AR</span>
       </div>
     </div>
   </div>
@@ -134,23 +134,31 @@
         </div>
       </div>
 
-      <!-- DURUM VE İZİN BUTONLARI -->
+      <!-- DURUM VE SENSÖR ROZETLERİ -->
       <div class="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-white/10">
-        <div class="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
+        <!-- GPS Hassasiyet -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 px-2 py-1 rounded-xl border border-slate-700/80">
           <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span id="gps-accuracy" class="mono text-[11px] font-semibold text-slate-200">-- m</span>
         </div>
 
-        <div class="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
+        <!-- Pusula -->
+        <div class="flex items-center gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-slate-700/80">
           <span class="text-cyan-400 text-xs">🧭</span>
           <span id="compass-readout" class="mono text-[11px] font-bold text-cyan-300">000° K</span>
         </div>
 
-        <button id="btn-activate-compass" class="flex items-center gap-1 bg-orange-500 hover:bg-orange-400 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-bold shadow-md shadow-orange-500/30 transition animate-pulse">
+        <!-- Canlı Arazi Kotu (DEM) -->
+        <div class="flex items-center gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-emerald-500/40">
+          <span class="text-emerald-400 text-[11px]">⛰️</span>
+          <span id="dem-status" class="mono text-[11px] font-bold text-emerald-300">Kot: --</span>
+        </div>
+
+        <button id="btn-activate-compass" class="flex items-center gap-1 bg-orange-500 hover:bg-orange-400 active:scale-95 text-white px-2.5 py-1 rounded-xl text-[11px] font-bold shadow-md shadow-orange-500/30 transition animate-pulse">
           <span>Pusulayı Aktifleştir</span>
         </button>
 
-        <label class="ml-auto flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition">
+        <label class="ml-auto flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1 rounded-xl text-[11px] font-bold cursor-pointer transition">
           <span>KMZ Aç</span>
           <input type="file" id="kmz-input-hud" accept=".kmz,.kml" class="hidden">
         </label>
@@ -192,39 +200,48 @@
         </div>
       </div>
 
-      <!-- ZEMİN HİZALAMA & KALİBRASYON PANELİ -->
-      <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40 max-h-[60vh] overflow-y-auto">
+      <!-- ZEMİN HİZALAMA & TOPOGRAFYA PANELİ -->
+      <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40 max-h-[62vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-2.5">
-          <span class="text-xs font-bold text-amber-300">Zemin Hizalama & Kalibrasyon</span>
+          <span class="text-xs font-bold text-amber-300">Topografya & Ufuk Hizalama</span>
           <div class="flex items-center gap-2">
-            <button id="btn-reset-settings" class="text-[11px] text-cyan-300 hover:underline">Sıfırla</button>
-            <button id="btn-close-settings" class="text-xs text-slate-400 hover:text-white px-2">Kapat ✕</button>
+            <button id="btn-refresh-dem" class="text-[11px] bg-emerald-600/80 text-white px-2 py-0.5 rounded font-semibold">Kotu Yenile</button>
+            <button id="btn-close-settings" class="text-xs text-slate-400 hover:text-white px-1.5">✕</button>
           </div>
         </div>
         <div class="space-y-3">
-          <!-- ARAZİ EĞİMİ (YENİ) -->
-          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-amber-500/25">
-            <div class="flex justify-between text-[11px] text-amber-200 font-semibold mb-1">
-              <span>Arazi Eğimi (- İniş / + Yokuş)</span>
-              <span id="slope-val" class="mono text-amber-400">-2.0°</span>
+          <!-- GERÇEK ARAZİ KOTU (DEM) ANAHTARI -->
+          <div class="flex items-center justify-between bg-emerald-950/50 p-2.5 rounded-xl border border-emerald-500/30">
+            <div>
+              <span class="text-xs font-bold text-emerald-300 block">Gerçek Harita Kotu (DEM)</span>
+              <span class="text-[10px] text-slate-300">Vadi ve tepe yüksekliklerini otomatik uygular</span>
             </div>
-            <input type="range" id="ground-slope-slider" min="-25" max="25" step="0.5" value="-2" class="w-full">
-            <p class="text-[10px] text-slate-400 mt-1">Vadiye/inişe bakarken çizgi havada kalıyorsa sola (-), yokuş yukarı bakarken yere gömülüyorsa sağa (+) kaydırın.</p>
+            <input type="checkbox" id="toggle-dem" checked class="w-5 h-5 accent-emerald-500">
           </div>
 
-          <!-- GÖZ YÜKSEKLİĞİ (30m'ye çıkarıldı) -->
+          <!-- UFUK / KAMERA EĞİM KALİBRASYONU -->
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-amber-500/25">
+            <div class="flex justify-between text-[11px] text-amber-200 font-semibold mb-1">
+              <span>Ufuk Çizgisi / Lens Eğim Ayarı</span>
+              <span id="pitch-offset-val" class="mono text-amber-400">0.0°</span>
+            </div>
+            <input type="range" id="pitch-offset-slider" min="-20" max="20" step="0.5" value="0" class="w-full">
+            <p class="text-[10px] text-slate-400 mt-1">Ufuktaki çizgi gökyüzüne taşıyorsa sola (-), yere gömülüyorsa sağa (+) kaydırın.</p>
+          </div>
+
+          <!-- GÖZ YÜKSEKLİĞİ -->
           <div>
             <div class="flex justify-between text-[11px] text-slate-300 mb-1">
-              <span>Göz / Tepe Kot Farkı</span>
-              <span id="height-val" class="mono text-amber-400">2.0 m</span>
+              <span>Göz Yüksekliği (Zeminden)</span>
+              <span id="height-val" class="mono text-amber-400">1.6 m</span>
             </div>
-            <input type="range" id="eye-height-slider" min="0.5" max="30.0" step="0.5" value="2.0" class="w-full">
+            <input type="range" id="eye-height-slider" min="0.5" max="15.0" step="0.2" value="1.6" class="w-full">
           </div>
 
           <!-- PUSULA SAPMASI -->
           <div>
             <div class="flex justify-between text-[11px] text-slate-300 mb-1">
-              <span>Pusula Sapma Kalibrasyonu</span>
+              <span>Pusula Yön Kalibrasyonu</span>
               <span id="offset-val" class="mono text-amber-400">0°</span>
             </div>
             <input type="range" id="heading-offset-slider" min="-180" max="180" value="0" class="w-full">
@@ -239,14 +256,10 @@
             <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="350" class="w-full">
           </div>
 
-          <!-- KM ETİKETLERİ & Z-KOTU -->
+          <!-- KM ETİKETLERİ -->
           <div class="flex items-center justify-between pt-1 border-t border-white/10">
             <span class="text-xs text-slate-200">KM Nokta Etiketlerini Göster</span>
             <input type="checkbox" id="toggle-labels" checked class="w-4 h-4 accent-amber-500">
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-200">KMZ İçi Kot (Z) Verisini Kullan</span>
-            <input type="checkbox" id="toggle-elevation" checked class="w-4 h-4 accent-amber-500">
           </div>
         </div>
       </div>
@@ -267,8 +280,8 @@
             <span>Test Modu</span>
           </button>
           <button id="btn-toggle-settings" class="glass px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-200 hover:border-amber-400/50 transition flex flex-col items-center gap-1">
-            <span class="text-amber-400 text-sm">⚙️</span>
-            <span>Zemin / Ayar</span>
+            <span class="text-amber-400 text-sm">⛰️</span>
+            <span>Zemin / Kot</span>
           </button>
         </div>
       </div>
@@ -281,17 +294,19 @@
       features: [],
       userLat: null,
       userLon: null,
-      userAlt: null,
+      userGroundElev: null, // Kullanıcının bulunduğu noktanın DEM rakımı
+      lastDemFetchLat: null,
+      lastDemFetchLon: null,
+      demFetching: false,
       gpsAccuracy: null,
       heading: 0,
-      pitch: 14,
+      pitch: 12,
+      pitchOffset: 0,
       headingOffset: 0,
-      eyeHeight: 2.0,
-      groundSlope: -2.0, // Varsayılan hafif iniş telafisi (derece)
+      eyeHeight: 1.6,
       maxRange: 350,
       showLabels: true,
-      useElevation: true,
-      hasKMZElevation: false,
+      useDEM: true,
       simMode: false,
       simHeading: 0,
       compassActive: false
@@ -333,11 +348,9 @@
           if (state.simMode) return;
           state.userLat = pos.coords.latitude;
           state.userLon = pos.coords.longitude;
-          if (typeof pos.coords.altitude === 'number' && !isNaN(pos.coords.altitude)) {
-            state.userAlt = pos.coords.altitude;
-          }
           state.gpsAccuracy = pos.coords.accuracy;
           updateGPSUI();
+          checkAndFetchDEM();
         },
         () => {
           document.getElementById('gps-coords').textContent = 'GPS Hatası: Konum iznini kontrol edin';
@@ -366,6 +379,86 @@
       }
     }
 
+    // --- GERÇEK HARİTA ARAZİ KOTU (DEM) ÇEKME MOTORU ---
+    function checkAndFetchDEM(force = false) {
+      if (state.userLat === null || state.demFetching) return;
+      if (!force && state.lastDemFetchLat !== null) {
+        const moved = Math.hypot(
+          (state.userLat - state.lastDemFetchLat) * 111320,
+          (state.userLon - state.lastDemFetchLon) * 111320 * Math.cos(state.userLat * Math.PI / 180)
+        );
+        if (moved < 25) return; // 25 metreden az hareket edildiyse mevcut DEM verisini koru
+      }
+      fetchTopographyDEM();
+    }
+
+    async function fetchTopographyDEM() {
+      if (state.userLat === null || state.demFetching) return;
+      state.demFetching = true;
+      const statusEl = document.getElementById('dem-status');
+      statusEl.textContent = 'Kot Alınıyor...';
+
+      try {
+        // 1. Kullanıcının kendi koordinatı + çevredeki 600m içindeki hat noktalarını topla
+        const queryPoints = [{ lat: state.userLat, lon: state.userLon, target: 'user' }];
+
+        state.features.forEach(feat => {
+          if (feat.type === 'line') {
+            for (let i = 0; i < feat.points.length; i++) {
+              const pt = feat.points[i];
+              const d = Math.hypot(
+                (pt.lat - state.userLat) * 111320,
+                (pt.lon - state.userLon) * 111320 * Math.cos(state.userLat * Math.PI / 180)
+              );
+              if (d <= 650 && queryPoints.length < 95) {
+                queryPoints.push({ lat: pt.lat, lon: pt.lon, ref: pt });
+              }
+            }
+          } else if (feat.type === 'point') {
+            const pt = feat.point;
+            const d = Math.hypot(
+              (pt.lat - state.userLat) * 111320,
+              (pt.lon - state.userLon) * 111320 * Math.cos(state.userLat * Math.PI / 180)
+            );
+            if (d <= 650 && queryPoints.length < 98) {
+              queryPoints.push({ lat: pt.lat, lon: pt.lon, ref: pt });
+            }
+          }
+        });
+
+        const lats = queryPoints.map(p => p.lat.toFixed(6)).join(',');
+        const lons = queryPoints.map(p => p.lon.toFixed(6)).join(',');
+        const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
+
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('DEM API yanıt vermedi');
+        const data = await resp.json();
+
+        if (data && Array.isArray(data.elevation)) {
+          data.elevation.forEach((elev, idx) => {
+            if (typeof elev === 'number' && !isNaN(elev)) {
+              if (queryPoints[idx].target === 'user') {
+                state.userGroundElev = elev;
+              } else if (queryPoints[idx].ref) {
+                queryPoints[idx].ref.demElev = elev;
+              }
+            }
+          });
+
+          state.lastDemFetchLat = state.userLat;
+          state.lastDemFetchLon = state.userLon;
+          if (state.userGroundElev !== null) {
+            statusEl.textContent = `Kot: ${Math.round(state.userGroundElev)}m`;
+          }
+        }
+      } catch (err) {
+        console.warn('DEM verisi alınamadı:', err);
+        statusEl.textContent = 'Kot: Çevrimdışı';
+      } finally {
+        state.demFetching = false;
+      }
+    }
+
     function onOrientationEvent(e) {
       let compass = null;
       if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
@@ -382,7 +475,6 @@
       }
 
       if (typeof e.beta === 'number' && !isNaN(e.beta)) {
-        // Telefon dik tutulduğunda (beta=90) pitch=0, öne eğildiğinde (beta<90) pozitif pitch
         state.pitch = Math.max(-50, Math.min(75, 90 - e.beta));
       }
     }
@@ -436,7 +528,6 @@
       const placemarks = xml.getElementsByTagName('Placemark');
       const features = [];
       let totalPoints = 0;
-      let nonZeroElevCount = 0;
 
       for (let i = 0; i < placemarks.length; i++) {
         const pm = placemarks[i];
@@ -452,7 +543,6 @@
             const pts = parseCoordinates(coordsEl.textContent);
             if (pts.length > 1) {
               totalPoints += pts.length;
-              nonZeroElevCount += pts.filter(p => p.alt !== 0).length;
               features.push({ type: 'line', name, isAxis, points: pts });
             }
           }
@@ -484,9 +574,10 @@
       }
 
       state.features = features;
-      state.hasKMZElevation = nonZeroElevCount > 10;
+      state.lastDemFetchLat = null;
       const lineCount = features.filter(f => f.type === 'line').length;
       document.getElementById('stats-badge').textContent = `${lineCount} Hat • ${totalPoints} Nokta`;
+      checkAndFetchDEM(true);
     }
 
     function parseCoordinates(raw) {
@@ -497,25 +588,23 @@
         const lat = parseFloat(parts[1]);
         const alt = parts.length >= 3 ? parseFloat(parts[2]) : 0;
         if (isNaN(lat) || isNaN(lon)) return null;
-        return { lat, lon, alt: isNaN(alt) ? 0 : alt };
+        return { lat, lon, alt: isNaN(alt) ? 0 : alt, demElev: null };
       }).filter(Boolean);
     }
 
-    function toLocalMeters(lat, lon, alt = 0) {
+    function toLocalMeters(pt) {
       const R = 6378137;
-      const dLat = (lat - state.userLat) * Math.PI / 180;
-      const dLon = (lon - state.userLon) * Math.PI / 180;
-      const meanLat = ((lat + state.userLat) / 2) * Math.PI / 180;
+      const dLat = (pt.lat - state.userLat) * Math.PI / 180;
+      const dLon = (pt.lon - state.userLon) * Math.PI / 180;
+      const meanLat = ((pt.lat + state.userLat) / 2) * Math.PI / 180;
       const north = dLat * R;
       const east = dLon * R * Math.cos(meanLat);
-      const dist = Math.hypot(east, north);
 
-      // Zemin yüksekliği hesabı: Göz yüksekliği + Arazi eğim rampası + (varsa KMZ kot farkı)
-      const slopeRad = state.groundSlope * Math.PI / 180;
-      let verticalOffset = -state.eyeHeight + Math.tan(slopeRad) * dist;
-
-      if (state.useElevation && state.hasKMZElevation && state.userAlt !== null && alt !== 0) {
-        verticalOffset += (alt - state.userAlt);
+      // Gerçek Arazi Kotu (DEM) farkı hesabı:
+      // Noktanın DEM rakımı - Kullanıcının DEM rakımı - Göz yüksekliği
+      let verticalOffset = -state.eyeHeight;
+      if (state.useDEM && state.userGroundElev !== null && typeof pt.demElev === 'number') {
+        verticalOffset += (pt.demElev - state.userGroundElev);
       }
 
       return { east, north, up: verticalOffset };
@@ -524,6 +613,10 @@
     function getEffectiveHeading() {
       const base = state.simMode ? state.simHeading : state.heading;
       return (base + state.headingOffset + 360) % 360;
+    }
+
+    function getEffectivePitch() {
+      return state.pitch + state.pitchOffset;
     }
 
     function renderLoop() {
@@ -572,10 +665,9 @@
         f2 = near;
       }
 
-      // iPhone ana kamera dikey FOV ~ 68 derece
       const fovV = 68 * Math.PI / 180;
       const focal = (h / 2) / Math.tan(fovV / 2);
-      const pitchRad = state.pitch * Math.PI / 180;
+      const pitchRad = getEffectivePitch() * Math.PI / 180;
 
       const z1 = f1 * Math.cos(pitchRad) - u1 * Math.sin(pitchRad);
       const y1 = f1 * Math.sin(pitchRad) + u1 * Math.cos(pitchRad);
@@ -617,10 +709,8 @@
           arCtx.lineCap = 'round';
 
           for (let i = 0; i < feat.points.length - 1; i++) {
-            const p1 = feat.points[i];
-            const p2 = feat.points[i + 1];
-            const m1 = toLocalMeters(p1.lat, p1.lon, p1.alt);
-            const m2 = toLocalMeters(p2.lat, p2.lon, p2.alt);
+            const m1 = toLocalMeters(feat.points[i]);
+            const m2 = toLocalMeters(feat.points[i + 1]);
 
             const d1 = Math.hypot(m1.east, m1.north);
             const d2 = Math.hypot(m2.east, m2.north);
@@ -649,7 +739,7 @@
           }
           arCtx.restore();
         } else if (feat.type === 'point' && state.showLabels) {
-          const m = toLocalMeters(feat.point.lat, feat.point.lon, feat.point.alt);
+          const m = toLocalMeters(feat.point);
           const dist = Math.hypot(m.east, m.north);
           if (dist <= state.maxRange) {
             const rad = heading * Math.PI / 180;
@@ -658,7 +748,7 @@
             if (forward > 1.5) {
               const fovV = 68 * Math.PI / 180;
               const focal = (h / 2) / Math.tan(fovV / 2);
-              const pitchRad = state.pitch * Math.PI / 180;
+              const pitchRad = getEffectivePitch() * Math.PI / 180;
               const zCam = forward * Math.cos(pitchRad) - m.up * Math.sin(pitchRad);
               const yCam = forward * Math.sin(pitchRad) + m.up * Math.cos(pitchRad);
               if (zCam > 0.5) {
@@ -740,7 +830,7 @@
         radarCtx.beginPath();
         let started = false;
         feat.points.forEach(pt => {
-          const m = toLocalMeters(pt.lat, pt.lon);
+          const m = toLocalMeters(pt);
           const forward = m.north * Math.cos(rad) + m.east * Math.sin(rad);
           const right = m.east * Math.cos(rad) - m.north * Math.sin(rad);
           const px = cx + (right / state.maxRange) * r;
@@ -794,8 +884,8 @@
           name: 'Boru Aksı (40" DGBH)',
           isAxis: true,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon, alt: 0 },
-            { lat: baseLat + 0.0018, lon: baseLon + 0.0003, alt: 0 }
+            { lat: baseLat - 0.0005, lon: baseLon, alt: 0, demElev: null },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.0003, alt: 0, demElev: null }
           ]
         },
         {
@@ -803,8 +893,8 @@
           name: 'Sağ İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon + 0.00014, alt: 0 },
-            { lat: baseLat + 0.0018, lon: baseLon + 0.00044, alt: 0 }
+            { lat: baseLat - 0.0005, lon: baseLon + 0.00014, alt: 0, demElev: null },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.00044, alt: 0, demElev: null }
           ]
         },
         {
@@ -812,8 +902,8 @@
           name: 'Sol İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon - 0.00014, alt: 0 },
-            { lat: baseLat + 0.0018, lon: baseLon + 0.00016, alt: 0 }
+            { lat: baseLat - 0.0005, lon: baseLon - 0.00014, alt: 0, demElev: null },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.00016, alt: 0, demElev: null }
           ]
         }
       ];
@@ -821,6 +911,7 @@
       document.getElementById('stats-badge').textContent = '3 Hat • 6 Nokta';
       document.getElementById('sim-panel').classList.remove('hidden');
       updateGPSUI();
+      checkAndFetchDEM(true);
       enterARMode();
     });
 
@@ -843,6 +934,7 @@
         state.userLon = firstLine.points[0].lon;
         state.simMode = true;
         updateGPSUI();
+        checkAndFetchDEM(true);
       }
     });
 
@@ -851,6 +943,7 @@
       state.userLat += dNorthMeters / 111320;
       state.userLon += dEastMeters / (111320 * Math.cos(state.userLat * Math.PI / 180));
       updateGPSUI();
+      checkAndFetchDEM();
     }
 
     document.getElementById('sim-heading-slider').addEventListener('input', (e) => {
@@ -868,9 +961,17 @@
       document.getElementById('settings-panel').classList.add('hidden');
     });
 
-    document.getElementById('ground-slope-slider').addEventListener('input', (e) => {
-      state.groundSlope = parseFloat(e.target.value);
-      document.getElementById('slope-val').textContent = `${state.groundSlope > 0 ? '+' : ''}${state.groundSlope.toFixed(1)}°`;
+    document.getElementById('btn-refresh-dem').addEventListener('click', () => {
+      checkAndFetchDEM(true);
+    });
+
+    document.getElementById('toggle-dem').addEventListener('change', (e) => {
+      state.useDEM = e.target.checked;
+    });
+
+    document.getElementById('pitch-offset-slider').addEventListener('input', (e) => {
+      state.pitchOffset = parseFloat(e.target.value);
+      document.getElementById('pitch-offset-val').textContent = `${state.pitchOffset > 0 ? '+' : ''}${state.pitchOffset.toFixed(1)}°`;
     });
 
     document.getElementById('eye-height-slider').addEventListener('input', (e) => {
@@ -891,22 +992,6 @@
 
     document.getElementById('toggle-labels').addEventListener('change', (e) => {
       state.showLabels = e.target.checked;
-    });
-
-    document.getElementById('toggle-elevation').addEventListener('change', (e) => {
-      state.useElevation = e.target.checked;
-    });
-
-    document.getElementById('btn-reset-settings').addEventListener('click', () => {
-      state.groundSlope = -2.0;
-      state.eyeHeight = 2.0;
-      state.headingOffset = 0;
-      document.getElementById('ground-slope-slider').value = -2.0;
-      document.getElementById('slope-val').textContent = '-2.0°';
-      document.getElementById('eye-height-slider').value = 2.0;
-      document.getElementById('height-val').textContent = '2.0 m';
-      document.getElementById('heading-offset-slider').value = 0;
-      document.getElementById('offset-val').textContent = '0°';
     });
   </script>
 </body>
