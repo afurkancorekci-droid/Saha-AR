@@ -1,1506 +1,816 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SahaAR | KMZ Boru Aksı & İrtifak AR Görüntüleyici</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- JSZip (KMZ dosyalarını istemci tarafında açmak için) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Tam ekran saha HUD ve mobil dokunmatik optimizasyonu */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
-        }
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #090d16;
-            color: #f8fafc;
-            user-select: none;
-        }
-        #cameraFeed {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1;
-        }
-        /* Kamera kapalıyken veya masaüstü simülasyonunda teknik ızgara arka planı */
-        #simGridBg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background: 
-                radial-gradient(circle at 50% 45%, rgba(14, 165, 233, 0.14) 0%, rgba(9, 13, 22, 0.96) 75%),
-                linear-gradient(rgba(30, 41, 59, 0.45) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(30, 41, 59, 0.45) 1px, transparent 1px);
-            background-size: 100% 100%, 36px 36px, 36px 36px;
-        }
-        #arCanvas {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-        }
-        #hudLayer {
-            position: fixed;
-            inset: 0;
-            z-index: 20;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .interactive {
-            pointer-events: auto;
-        }
-        .glass-hud {
-            background: rgba(15, 23, 42, 0.80);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(148, 163, 184, 0.22);
-        }
-        .glass-hud-strong {
-            background: rgba(9, 14, 26, 0.92);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(148, 163, 184, 0.28);
-        }
-        /* Özel kaydırıcı (slider) tasarımı */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            height: 6px;
-            background: rgba(51, 65, 85, 0.9);
-            border-radius: 999px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #f59e0b;
-            border: 2px solid #fff;
-            margin-top: -7px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-        }
-        /* AR Etiket Kartları */
-        .ar-pin {
-            position: absolute;
-            transform: translate(-50%, -100%);
-            pointer-events: auto;
-            transition: border-color 0.15s ease;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SahaAR | KMZ Boru Aksı & İrtifak Kontrolü</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: 'Inter', sans-serif;
+      color: #f8fafc;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    #camera-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+    #ar-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .glass {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.18);
+      height: 6px;
+      border-radius: 999px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Simülasyon / Kamera Yok Arka Planı -->
-    <div id="simGridBg"></div>
+  <!-- Canlı Kamera Görüntüsü -->
+  <video id="camera-video" autoplay playsinline muted></video>
+  
+  <!-- AR Çizim Katmanı -->
+  <canvas id="ar-canvas"></canvas>
 
-    <!-- Canlı Arka Kamera Görüntüsü -->
-    <video id="cameraFeed" autoplay playsinline muted></video>
+  <!-- GİRİŞ / DOSYA SEÇİM EKRANI -->
+  <div id="landing-screen" class="fixed inset-0 z-30 flex flex-col items-center justify-center p-5 bg-slate-950/95">
+    <div class="w-full max-w-md glass rounded-3xl p-6 shadow-2xl border border-amber-500/30">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight text-white">SahaAR <span class="text-amber-400">DGBH</span></h1>
+          <p class="text-xs text-slate-400">KMZ / KML Boru Aksı & İrtifak Görüntüleyici</p>
+        </div>
+      </div>
 
-    <!-- AR Çizim Katmanı (Boru Aksı, İrtifak Çizgileri, Nişangah, Ufuk Çizgisi) -->
-    <canvas id="arCanvas"></canvas>
+      <p class="text-sm text-slate-300 leading-relaxed mb-6">
+        Sahadaki boru aksını ve irtifak sınırlarını telefon kamerası üzerinde gerçek zamanlı görmek için <strong>.kmz</strong> veya <strong>.kml</strong> dosyanızı seçin.
+      </p>
 
-    <!-- Etkileşimli HTML AR Etiketleri Katmanı -->
-    <div id="arMarkersContainer" class="fixed inset-0 z-15 pointer-events-none overflow-hidden"></div>
+      <label class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-bold py-4 px-5 rounded-2xl cursor-pointer transition shadow-lg shadow-amber-500/25 mb-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        <span>KMZ / KML Dosyası Seç ve Başlat</span>
+        <input type="file" id="kmz-input-initial" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" class="hidden">
+      </label>
 
-    <!-- ANA TELEMETRİ VE KONTROL HUD KATMANI -->
-    <div id="hudLayer" class="p-3 sm:p-4">
-        
-        <!-- ÜST TELEMETRİ ÇUBUĞU -->
-        <div class="flex flex-col gap-2">
-            <div class="glass-hud rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-wrap items-center justify-between gap-2 interactive">
-                <!-- Sol: Dosya & Durum -->
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                        </svg>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <span id="activeFileName" class="text-xs sm:text-sm font-bold text-white truncate max-w-[160px] sm:max-w-[260px]">Dosya Yüklenmedi</span>
-                            <span id="featureCountBadge" class="hidden text-[10px] font-mono bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded-md border border-slate-700">0 obje</span>
-                        </div>
-                        <div id="gpsCoordsText" class="text-[11px] font-mono text-slate-300 truncate">
-                            Konum bekleniyor...
-                        </div>
-                    </div>
-                </div>
+      <button id="btn-demo-start" class="w-full py-3.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 text-slate-200 font-semibold text-sm border border-slate-700 transition">
+        Örnek Hat ile Masa Başı Test Modu
+      </button>
 
-                <!-- Sağ: GPS Hassasiyet & Pusula -->
-                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <!-- GPS Hassasiyet Rozeti -->
-                    <div id="gpsAccuracyBadge" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center gap-1.5">
-                        <span id="gpsDot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                        <span id="gpsAccText" class="text-[11px] font-mono font-bold text-slate-300">GPS: --</span>
-                    </div>
+      <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>iOS Safari & Android Chrome Uyumlu</span>
+        <span class="mono text-amber-400/90">v2.1 iOS-Compass</span>
+      </div>
+    </div>
+  </div>
 
-                    <!-- Pusula Yönü Rozeti -->
-                    <div class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 2L15 12L12 22L9 12L12 2Z"/>
-                        </svg>
-                        <span id="headingText" class="text-[11px] font-mono font-bold text-cyan-300">000° K</span>
-                    </div>
-
-                    <!-- KMZ Yükle Hızlı Butonu -->
-                    <label for="kmzFileInput" class="cursor-pointer px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                        </svg>
-                        <span>KMZ Aç</span>
-                    </label>
-                    <input type="file" id="kmzFileInput" accept=".kmz,.kml" class="hidden">
-                </div>
+  <!-- ANA AR ARAYÜZÜ (HUD) -->
+  <div id="ar-hud" class="hidden fixed inset-0 z-10 pointer-events-none flex flex-col justify-between p-3.5">
+    
+    <!-- ÜST PANEL -->
+    <div class="pointer-events-auto glass rounded-2xl p-3 shadow-xl max-w-lg w-full mx-auto">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h2 id="file-title" class="text-xs font-bold text-white truncate">Yüklü Hat</h2>
+              <span id="stats-badge" class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 shrink-0">0 Hat</span>
             </div>
+            <p id="gps-coords" class="mono text-[11px] text-slate-300 mt-0.5">GPS Konumu Bekleniyor...</p>
+          </div>
+        </div>
+      </div>
 
-            <!-- Aktif Uyarı / Bildirim Şeridi -->
-            <div id="toastBanner" class="hidden mx-auto glass-hud px-4 py-2 rounded-full text-xs font-medium text-amber-200 border-amber-500/40 shadow-lg flex items-center gap-2 interactive">
-                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                <span id="toastText">Bilgi mesajı</span>
-            </div>
-
-            <!-- Ekran Dışı Hedef Yön Göstergeleri (Sol / Sağ Oklar) -->
-            <div class="flex justify-between items-center px-1 mt-1">
-                <div id="offscreenLeft" class="hidden glass-hud px-2.5 py-1.5 rounded-xl border-amber-500/50 text-amber-300 text-xs font-mono font-bold flex items-center gap-1 shadow-lg">
-                    <span>◀</span>
-                    <span id="offscreenLeftText">Hat Solda</span>
-                </div>
-                <div class="flex-1"></div>
-                <div id="offscreenRight" class="hidden glass-hud px-2.5 py-1.5 rounded-xl border-amber-500/50 text-amber-300 text-xs font-mono font-bold flex items-center gap-1 shadow-lg">
-                    <span id="offscreenRightText">Hat Sağda</span>
-                    <span>▶</span>
-                </div>
-            </div>
+      <!-- DURUM VE İZİN BUTONLARI SATIRI -->
+      <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10">
+        <!-- GPS Hassasiyet -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
+          <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="gps-accuracy" class="mono text-[11px] font-semibold text-slate-200">-- m</span>
         </div>
 
-        <!-- ALT KONTROL VE RADAR ALANI -->
-        <div class="flex items-end justify-between gap-3">
-            
-            <!-- Sol Alt: Taktik Saha Radarı -->
-            <div class="glass-hud rounded-2xl p-2 shadow-2xl interactive flex flex-col items-center">
-                <div class="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border border-slate-700/80 bg-slate-950/90">
-                    <canvas id="radarCanvas" class="w-full h-full block"></canvas>
-                </div>
-                <div class="w-full flex items-center justify-between px-1 pt-1.5">
-                    <span class="text-[10px] font-mono text-slate-400">RADAR</span>
-                    <button id="radarRangeBtn" class="text-[10px] font-mono font-bold text-cyan-400 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 active:scale-95">
-                        250 m
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sağ Alt: Hızlı Saha Araçları -->
-            <div class="flex flex-col items-end gap-2 interactive">
-                <!-- Masa Başı Test / Simülasyon Modu Göstergesi -->
-                <div id="simControlBar" class="hidden glass-hud rounded-2xl p-2.5 w-64 sm:w-72 shadow-xl border-cyan-500/40">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-[11px] font-bold text-cyan-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                            SİMÜLASYON MODU
-                        </span>
-                        <button id="jumpToRouteBtn" class="text-[10px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 px-2 py-0.5 rounded-md font-semibold">
-                            Hatta Işınlan
-                        </button>
-                    </div>
-                    <div class="space-y-2 text-[11px]">
-                        <div>
-                            <div class="flex justify-between text-slate-300 font-mono">
-                                <span>Bakış Yönü (Azimut)</span>
-                                <span id="simHeadingVal">0°</span>
-                            </div>
-                            <input type="range" id="simHeadingSlider" min="0" max="360" value="0" class="w-full">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-slate-300 font-mono">
-                                <span>Telefon Eğimi (Pitch)</span>
-                                <span id="simPitchVal">-5°</span>
-                            </div>
-                            <input type="range" id="simPitchSlider" min="-45" max="45" value="-5" class="w-full">
-                        </div>
-                        <div class="grid grid-cols-4 gap-1 pt-1">
-                            <button onclick="moveSimUser(0, 15)" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg font-mono text-xs border border-slate-700">K ↑</button>
-                            <button onclick="moveSimUser(0, -15)" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg font-mono text-xs border border-slate-700">G ↓</button>
-                            <button onclick="moveSimUser(-15, 0)" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg font-mono text-xs border border-slate-700">B ←</button>
-                            <button onclick="moveSimUser(15, 0)" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg font-mono text-xs border border-slate-700">D →</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ana Eylem Butonları -->
-                <div class="flex items-center gap-2">
-                    <button id="toggleSimBtn" class="glass-hud px-3 py-2.5 rounded-2xl text-xs font-semibold text-slate-200 hover:text-white border-slate-600/60 flex items-center gap-1.5 shadow-lg active:scale-95">
-                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
-                        </svg>
-                        <span>Test Modu</span>
-                    </button>
-
-                    <button id="openSettingsBtn" class="glass-hud px-3.5 py-2.5 rounded-2xl text-xs font-bold text-amber-300 hover:text-amber-200 border-amber-500/40 flex items-center gap-1.5 shadow-lg active:scale-95">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                        </svg>
-                        <span>Ayarlar & Katmanlar</span>
-                    </button>
-                </div>
-            </div>
+        <!-- Pusula Derecesi -->
+        <div class="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
+          <span class="text-cyan-400 text-xs">🧭</span>
+          <span id="compass-readout" class="mono text-[11px] font-bold text-cyan-300">000° K</span>
         </div>
+
+        <!-- iOS PUSULA AKTİFLEŞTİR BUTONU -->
+        <button id="btn-activate-compass" class="flex items-center gap-1 bg-orange-500 hover:bg-orange-400 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-bold shadow-md shadow-orange-500/30 transition animate-pulse">
+          <span>Pusulayı Aktifleştir</span>
+        </button>
+
+        <!-- Yeni KMZ Yükle -->
+        <label class="ml-auto flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition">
+          <span>KMZ Aç</span>
+          <input type="file" id="kmz-input-hud" accept=".kmz,.kml" class="hidden">
+        </label>
+      </div>
     </div>
 
-    <!-- BAŞLANGIÇ / İZİN VE DOSYA SEÇİM EKRANI (MODAL) -->
-    <div id="welcomeModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-hud-strong rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-700/80 space-y-5">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-slate-950 shadow-lg shrink-0">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold text-white tracking-tight">SahaAR Hat Görüntüleyici</h1>
-                    <p class="text-xs text-slate-400">KMZ / KML Boru Aksı & İrtifak Sınırı AR Sistemi</p>
-                </div>
-            </div>
-
-            <div class="bg-slate-900/90 rounded-2xl p-3.5 border border-slate-800 space-y-2 text-xs text-slate-300 leading-relaxed">
-                <p class="font-semibold text-amber-300">Saha Kullanım Bilgisi:</p>
-                <ul class="space-y-1.5 list-disc list-inside text-slate-300">
-                    <li>Telefonunuzdaki <strong class="text-white">.kmz</strong> veya <strong class="text-white">.kml</strong> dosyasını doğrudan seçin.</li>
-                    <li><span class="text-amber-400 font-semibold">Turuncu/Sarı çizgiler</span> Boru Aksını, <span class="text-cyan-400 font-semibold">Mavi çizgiler</span> İrtifak Sınırlarını gösterir.</li>
-                    <li>En iyi pusula doğruluğu için telefonunuzu havada 8 çizerek kalibre edin.</li>
-                </ul>
-            </div>
-
-            <div class="space-y-2.5">
-                <!-- 1. KMZ Dosyası Seç ve Başlat -->
-                <label for="welcomeFileInput" class="w-full cursor-pointer py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition active:scale-98">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                    </svg>
-                    <span>KMZ / KML Dosyası Seç ve Kamerayı Aç</span>
-                </label>
-                <input type="file" id="welcomeFileInput" accept=".kmz,.kml" class="hidden">
-
-                <!-- 2. Örnek Hat Verisi ile Başlat -->
-                <button id="loadDemoBtn" class="w-full py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-slate-700 flex items-center justify-center gap-2 transition active:scale-98">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>Örnek Hat Verisi Yükle (Mut-Mersin DGBH Simülasyonu)</span>
-                </button>
-            </div>
-        </div>
+    <!-- ORTA HEDEF ARTISI -->
+    <div class="self-center flex flex-col items-center opacity-60">
+      <div class="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center">
+        <div class="w-1 h-1 rounded-full bg-amber-400"></div>
+      </div>
     </div>
 
-    <!-- AYARLAR, KATMANLAR VE PUSULA KALİBRASYON ÇEKMECESİ -->
-    <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="glass-hud-strong w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 border-t sm:border border-slate-700 shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h2 class="text-base font-bold text-white flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                    Saha Kalibrasyon & Katman Ayarları
-                </h2>
-                <button id="closeSettingsBtn" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">✕</button>
-            </div>
-
-            <!-- Pusula Sapma Ayarı -->
-            <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-slate-200">Pusula Sapma Kalibrasyonu</span>
-                    <span id="compassOffsetVal" class="text-xs font-mono font-bold text-amber-400">0°</span>
-                </div>
-                <input type="range" id="compassOffsetSlider" min="-45" max="45" value="0" class="w-full">
-                <div class="flex justify-between text-[10px] text-slate-400">
-                    <span>-45° Sol</span>
-                    <button id="resetCompassOffsetBtn" class="text-cyan-400 underline">Sıfırla (0°)</button>
-                    <span>+45° Sağ</span>
-                </div>
-            </div>
-
-            <!-- Maksimum Görüş Mesafesi -->
-            <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-slate-200">AR Maksimum Görüş Mesafesi</span>
-                    <span id="maxDistVal" class="text-xs font-mono font-bold text-cyan-400">500 m</span>
-                </div>
-                <div class="grid grid-cols-5 gap-1.5">
-                    <button data-dist="100" class="dist-btn py-1.5 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300">100m</button>
-                    <button data-dist="250" class="dist-btn py-1.5 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300">250m</button>
-                    <button data-dist="500" class="dist-btn py-1.5 rounded-lg text-xs font-mono bg-amber-500/20 border border-amber-500 text-amber-300 font-bold">500m</button>
-                    <button data-dist="1000" class="dist-btn py-1.5 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300">1km</button>
-                    <button data-dist="5000" class="dist-btn py-1.5 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300">5km</button>
-                </div>
-            </div>
-
-            <!-- Katman Görünürlükleri -->
-            <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2.5">
-                <span class="text-xs font-semibold text-slate-200 block">Görünür Hat Katmanları</span>
-                
-                <label class="flex items-center justify-between cursor-pointer">
-                    <span class="flex items-center gap-2 text-xs text-slate-300">
-                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
-                        Boru Aksı (Merkez Hat)
-                    </span>
-                    <input type="checkbox" id="layerAxisCheck" checked class="w-4 h-4 accent-amber-500 rounded">
-                </label>
-
-                <label class="flex items-center justify-between cursor-pointer">
-                    <span class="flex items-center gap-2 text-xs text-slate-300">
-                        <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
-                        İrtifak Sınırları (Sağ / Sol)
-                    </span>
-                    <input type="checkbox" id="layerEasementCheck" checked class="w-4 h-4 accent-cyan-400 rounded">
-                </label>
-
-                <label class="flex items-center justify-between cursor-pointer">
-                    <span class="flex items-center gap-2 text-xs text-slate-300">
-                        <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
-                        KM Taşları & Özel Geçiş Noktaları
-                    </span>
-                    <input type="checkbox" id="layerPointsCheck" checked class="w-4 h-4 accent-emerald-400 rounded">
-                </label>
-            </div>
-
-            <!-- Sensör & Kamera Yeniden Başlatma -->
-            <div class="grid grid-cols-2 gap-2">
-                <button id="recalibrateSensorsBtn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-cyan-300 border border-slate-700">
-                    Sensör İznini Yenile
-                </button>
-                <button id="jumpToNearestBtn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-slate-700">
-                    Konumu Hatta Getir (Test)
-                </button>
-            </div>
+    <!-- ALT PANEL: RADAR + KONTROLLER -->
+    <div class="pointer-events-auto max-w-lg w-full mx-auto flex flex-col gap-2.5">
+      
+      <!-- SİMÜLASYON / TEST PANELİ (Varsayılan Gizli) -->
+      <div id="sim-panel" class="hidden glass rounded-2xl p-3.5 border border-cyan-500/40">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-cyan-300">Saha Test Modu (Sanal Yön & Konum)</span>
+          <button id="btn-teleport" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold px-2.5 py-1 rounded-lg">
+            Hatta Işınlan
+          </button>
         </div>
-    </div>
-
-    <!-- OBJE DETAY PENCERESİ (AR Etiketine Tıklanınca Açılır) -->
-    <div id="featureDetailModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="glass-hud-strong rounded-3xl max-w-sm w-full p-5 border border-slate-700 shadow-2xl space-y-3">
-            <div class="flex items-start justify-between gap-2">
-                <div>
-                    <span id="detailCategoryBadge" class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">BORU AKSI</span>
-                    <h3 id="detailTitle" class="text-base font-bold text-white mt-1">Nokta Adı</h3>
-                </div>
-                <button id="closeDetailBtn" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">✕</button>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Sanal Bakış Yönü (Pusula)</span>
+              <span id="sim-heading-val" class="mono text-cyan-300">0°</span>
             </div>
-            <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 font-mono text-xs">
-                <div>
-                    <span class="text-[10px] text-slate-400 block">MESAFE</span>
-                    <span id="detailDistance" class="text-amber-400 font-bold text-sm">-- m</span>
-                </div>
-                <div>
-                    <span class="text-[10px] text-slate-400 block">İSTİKAMET (AZİMUT)</span>
-                    <span id="detailBearing" class="text-cyan-400 font-bold text-sm">--°</span>
-                </div>
-                <div class="col-span-2 pt-1 border-t border-slate-800">
-                    <span class="text-[10px] text-slate-400 block">KOORDİNAT (WGS84)</span>
-                    <span id="detailCoords" class="text-slate-200 text-[11px]">--</span>
-                </div>
-            </div>
-            <div id="detailDescBox" class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 text-xs text-slate-300 max-h-36 overflow-y-auto">
-                Açıklama bulunmuyor.
-            </div>
+            <input type="range" id="sim-heading-slider" min="0" max="359" value="0" class="w-full">
+          </div>
+          <div class="grid grid-cols-4 gap-1.5 pt-1">
+            <button onclick="nudgeSimPosition(10, 0)" class="bg-slate-800 py-1.5 rounded-lg text-[11px] font-semibold">+10m Kuzey</button>
+            <button onclick="nudgeSimPosition(-10, 0)" class="bg-slate-800 py-1.5 rounded-lg text-[11px] font-semibold">-10m Güney</button>
+            <button onclick="nudgeSimPosition(0, 10)" class="bg-slate-800 py-1.5 rounded-lg text-[11px] font-semibold">+10m Doğu</button>
+            <button onclick="nudgeSimPosition(0, -10)" class="bg-slate-800 py-1.5 rounded-lg text-[11px] font-semibold">-10m Batı</button>
+          </div>
         </div>
+      </div>
+
+      <!-- AYARLAR PANELİ (Varsayılan Gizli) -->
+      <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs font-bold text-amber-300">Kalibrasyon & Görünüm Ayarları</span>
+          <button id="btn-close-settings" class="text-xs text-slate-400 hover:text-white px-2">Kapat ✕</button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Pusula Sapma Kalibrasyonu</span>
+              <span id="offset-val" class="mono text-amber-400">0°</span>
+            </div>
+            <input type="range" id="heading-offset-slider" min="-180" max="180" value="0" class="w-full">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Göz Yüksekliği (Zemin Derinliği)</span>
+              <span id="height-val" class="mono text-amber-400">1.6 m</span>
+            </div>
+            <input type="range" id="eye-height-slider" min="0.5" max="5.0" step="0.1" value="1.6" class="w-full">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Görüş Menzili</span>
+              <span id="range-val" class="mono text-amber-400">250 m</span>
+            </div>
+            <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="250" class="w-full">
+          </div>
+        </div>
+      </div>
+
+      <!-- ALT BAR: RADAR + BUTONLAR -->
+      <div class="flex items-end justify-between gap-2.5">
+        <!-- Mini Radar -->
+        <div class="glass rounded-2xl p-2 flex flex-col items-center">
+          <canvas id="radar-canvas" width="104" height="104" class="rounded-full bg-slate-950/90 border border-slate-700"></canvas>
+          <div class="flex items-center justify-between w-full px-1 mt-1">
+            <span class="text-[9px] font-bold tracking-wider text-slate-400">RADAR</span>
+            <span id="radar-range-label" class="mono text-[9px] text-cyan-400">250 m</span>
+          </div>
+        </div>
+
+        <!-- Sağ Butonlar -->
+        <div class="flex gap-2">
+          <button id="btn-toggle-sim" class="glass px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-200 hover:border-cyan-400/50 transition flex flex-col items-center gap-1">
+            <span class="text-cyan-400 text-sm">🧭</span>
+            <span>Test Modu</span>
+          </button>
+          <button id="btn-toggle-settings" class="glass px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-200 hover:border-amber-400/50 transition flex flex-col items-center gap-1">
+            <span class="text-amber-400 text-sm">⚙️</span>
+            <span>Ayarlar</span>
+          </button>
+        </div>
+      </div>
+
     </div>
+  </div>
 
-    <script>
-        // ============================================================================
-        // 1. UYGULAMA DURUMU (STATE) & SABİTLER
-        // ============================================================================
-        const state = {
-            // Kullanıcı konumu ve sensörler
-            userLat: null,
-            userLon: null,
-            gpsAccuracy: null,
-            heading: 0,           // Ham pusula açısı (0-360, Kuzey = 0)
-            smoothHeading: 0,     // Filtrelenmiş yumuşak pusula açısı
-            pitch: -5,            // Telefon eğimi (derece, 0 = ufuk çizgisi)
-            smoothPitch: -5,
-            compassOffset: 0,     // Kullanıcının kalibrasyon sapma ayarı (-45 ile +45)
-            
-            // Kamera & Simülasyon
-            cameraActive: false,
-            simMode: false,
-            
-            // Görünüm ve Filtreler
-            hfov: 62,             // Yatay kamera görüş açısı (derece)
-            vfov: 48,             // Dikey kamera görüş açısı (derece)
-            maxDistance: 500,     // AR'da gösterilecek maks mesafe (metre)
-            radarRange: 250,      // Radar yarıçapı (metre)
-            layers: {
-                axis: true,
-                easement: true,
-                points: true
-            },
-            
-            // Yüklenen KML/KMZ Verileri
-            fileName: '',
-            points: [],           // { id, name, desc, category, color, lat, lon, ele }
-            lines: []             // { id, name, desc, category, color, coords: [{lat, lon, ele}] }
-        };
+  <script>
+    // --- UYGULAMA DURUMU ---
+    const state = {
+      features: [],
+      userLat: null,
+      userLon: null,
+      gpsAccuracy: null,
+      heading: 0,
+      pitch: 12, // Telefonun öne eğimi (derece, yataydan aşağı)
+      headingOffset: 0,
+      eyeHeight: 1.6,
+      maxRange: 250,
+      simMode: false,
+      simHeading: 0,
+      compassActive: false
+    };
 
-        const RADAR_RANGES = [100, 250, 500, 1000];
-        let radarRangeIdx = 1;
+    const video = document.getElementById('camera-video');
+    const arCanvas = document.getElementById('ar-canvas');
+    const arCtx = arCanvas.getContext('2d');
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
 
-        // DOM Elemanları
-        const videoEl = document.getElementById('cameraFeed');
-        const arCanvas = document.getElementById('arCanvas');
-        const arCtx = arCanvas.getContext('2d');
-        const radarCanvas = document.getElementById('radarCanvas');
-        const radarCtx = radarCanvas.getContext('2d');
-        const markersContainer = document.getElementById('arMarkersContainer');
+    // --- EKRAN BOYUTLANDIRMA ---
+    function resizeCanvas() {
+      arCanvas.width = window.innerWidth * window.devicePixelRatio;
+      arCanvas.height = window.innerHeight * window.devicePixelRatio;
+      arCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-        // ============================================================================
-        // 2. KMZ & KML PARSER MOTORU (İSTEMCİ TARAFLI)
-        // ============================================================================
-        
-        /**
-         * Dosya yükleme olayını dinler (.kmz veya .kml)
-         */
-        async function handleFileUpload(file) {
-            if (!file) return;
-            showToast(`"${file.name}" işleniyor...`);
-            
-            try {
-                let kmlText = '';
-                const lowerName = file.name.toLowerCase();
+    // --- KAMERA BAŞLATMA ---
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        console.warn('Kamera açılamadı:', err);
+      }
+    }
 
-                if (lowerName.endsWith('.kmz')) {
-                    if (typeof JSZip === 'undefined') {
-                        throw new Error('JSZip kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.');
-                    }
-                    const arrayBuffer = await file.arrayBuffer();
-                    const zip = await JSZip.loadAsync(arrayBuffer);
-                    
-                    // ZIP içindeki ana .kml dosyasını bul (genellikle doc.kml veya *.kml)
-                    let kmlFile = zip.file('doc.kml');
-                    if (!kmlFile) {
-                        const kmlNames = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.kml'));
-                        if (kmlNames.length === 0) {
-                            throw new Error('KMZ arşivi içinde KML dosyası bulunamadı.');
-                        }
-                        kmlFile = zip.file(kmlNames[0]);
-                    }
-                    kmlText = await kmlFile.async('string');
-                } else if (lowerName.endsWith('.kml')) {
-                    kmlText = await file.text();
-                } else {
-                    throw new Error('Lütfen geçerli bir .kmz veya .kml dosyası seçin.');
-                }
+    // --- GPS KONUM TAKİBİ ---
+    function startGPS() {
+      if (!('geolocation' in navigator)) return;
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          if (state.simMode) return;
+          state.userLat = pos.coords.latitude;
+          state.userLon = pos.coords.longitude;
+          state.gpsAccuracy = pos.coords.accuracy;
+          updateGPSUI();
+        },
+        (err) => {
+          document.getElementById('gps-coords').textContent = 'GPS Hatası: Konum iznini kontrol edin';
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+      );
+    }
 
-                parseKMLContent(kmlText, file.name);
-                document.getElementById('welcomeModal').classList.add('hidden');
-                await startSensorsAndCamera();
-            } catch (err) {
-                console.error('KMZ/KML Okuma Hatası:', err);
-                showToast(`Hata: ${err.message}`, true);
+    function updateGPSUI() {
+      if (state.userLat === null) return;
+      const latDir = state.userLat >= 0 ? 'K' : 'G';
+      const lonDir = state.userLon >= 0 ? 'D' : 'B';
+      document.getElementById('gps-coords').textContent =
+        `${Math.abs(state.userLat).toFixed(6)}°${latDir}, ${Math.abs(state.userLon).toFixed(6)}°${lonDir}`;
+      
+      const accEl = document.getElementById('gps-accuracy');
+      const dotEl = document.getElementById('gps-dot');
+      if (state.simMode) {
+        accEl.textContent = 'SIM';
+        dotEl.className = 'w-2 h-2 rounded-full bg-cyan-400';
+      } else if (state.gpsAccuracy) {
+        accEl.textContent = `±${state.gpsAccuracy.toFixed(1)}m`;
+        dotEl.className = state.gpsAccuracy <= 10
+          ? 'w-2 h-2 rounded-full bg-emerald-400'
+          : 'w-2 h-2 rounded-full bg-amber-400';
+      }
+    }
+
+    // --- iOS & ANDROID PUSULA / YÖNELİM SENSÖRÜ ---
+    function onOrientationEvent(e) {
+      let compass = null;
+
+      // 1. iOS Safari özel pusula açısı
+      if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+        compass = e.webkitCompassHeading;
+      } 
+      // 2. Android / Standart cihazlar
+      else if (e.alpha !== null) {
+        compass = (360 - e.alpha) % 360;
+      }
+
+      if (compass !== null) {
+        state.heading = compass;
+        state.compassActive = true;
+        const btn = document.getElementById('btn-activate-compass');
+        if (btn && btn.style.display !== 'none') {
+          btn.style.display = 'none';
+        }
+      }
+
+      // Telefonun dikey eğimi (beta: 90 derece dik tutuş, 0 derece yere paralel)
+      if (typeof e.beta === 'number' && !isNaN(e.beta)) {
+        // Telefon dik tutulduğunda (beta ~ 75-85) ufuk çizgisi ortada olur
+        const tiltDown = Math.max(-45, Math.min(75, 90 - e.beta));
+        state.pitch = tiltDown;
+      }
+    }
+
+    async function requestIOSCompass() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            window.addEventListener('deviceorientation', onOrientationEvent, true);
+            const btn = document.getElementById('btn-activate-compass');
+            btn.textContent = 'Pusula Aktif ✓';
+            btn.classList.remove('bg-orange-500', 'animate-pulse');
+            btn.classList.add('bg-emerald-600');
+            setTimeout(() => { btn.style.display = 'none'; }, 1500);
+          } else {
+            alert('Hareket ve Yön izni reddedildi. iPhone Ayarlar > Safari > Web Sitesi Verileri kısmından site verisini silip tekrar deneyin.');
+          }
+        } catch (err) {
+          alert('Sensör izni alınamadı: ' + err.message);
+        }
+      } else {
+        window.addEventListener('deviceorientationabsolute', onOrientationEvent, true);
+        window.addEventListener('deviceorientation', onOrientationEvent, true);
+        const btn = document.getElementById('btn-activate-compass');
+        btn.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btn-activate-compass').addEventListener('click', requestIOSCompass);
+
+    // --- KMZ / KML DOSYA OKUMA VE AYRIŞTIRMA ---
+    async function handleFileUpload(file) {
+      if (!file) return;
+      document.getElementById('file-title').textContent = file.name.replace(/\.(kmz|kml)$/i, '');
+
+      let kmlText = '';
+      if (file.name.toLowerCase().endsWith('.kmz')) {
+        const zip = await JSZip.loadAsync(file);
+        const kmlFile = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'));
+        if (!kmlFile) {
+          alert('KMZ arşivi içinde KML dosyası bulunamadı.');
+          return;
+        }
+        kmlText = await kmlFile.async('string');
+      } else {
+        kmlText = await file.text();
+      }
+
+      parseKML(kmlText);
+      enterARMode();
+    }
+
+    function parseKML(kmlString) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(kmlString, 'text/xml');
+      const placemarks = xml.getElementsByTagName('Placemark');
+      const features = [];
+      let totalPoints = 0;
+
+      for (let i = 0; i < placemarks.length; i++) {
+        const pm = placemarks[i];
+        const nameEl = pm.getElementsByTagName('name')[0];
+        const name = nameEl ? nameEl.textContent.trim() : `Hat ${i + 1}`;
+        const isAxis = /aks|boru|center|line|hat/i.test(name) && !/irtifak|sınır|koridor|kamulaştırma/i.test(name);
+
+        const lineStrings = pm.getElementsByTagName('LineString');
+        for (let j = 0; j < lineStrings.length; j++) {
+          const coordsEl = lineStrings[j].getElementsByTagName('coordinates')[0];
+          if (coordsEl) {
+            const pts = parseCoordinates(coordsEl.textContent);
+            if (pts.length > 1) {
+              totalPoints += pts.length;
+              features.push({ type: 'line', name, isAxis, points: pts });
             }
+          }
         }
 
-        /**
-         * KML XML metnini ayrıştırır, Nokta, Çizgi (Boru Aksı / İrtifak) ve Poligonları çıkarır
-         */
-        function parseKMLContent(kmlText, fileName) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(kmlText, 'text/xml');
-            
-            const parserError = xmlDoc.querySelector('parsererror');
-            if (parserError) {
-                throw new Error('KML XML yapısı bozuk veya okunamıyor.');
+        const polygons = pm.getElementsByTagName('Polygon');
+        for (let j = 0; j < polygons.length; j++) {
+          const coordsEl = polygons[j].getElementsByTagName('coordinates')[0];
+          if (coordsEl) {
+            const pts = parseCoordinates(coordsEl.textContent);
+            if (pts.length > 2) {
+              totalPoints += pts.length;
+              features.push({ type: 'line', name, isAxis: false, points: pts });
             }
-
-            const placemarks = xmlDoc.getElementsByTagName('Placemark');
-            const parsedPoints = [];
-            const parsedLines = [];
-
-            for (let i = 0; i < placemarks.length; i++) {
-                const pm = placemarks[i];
-                const nameEl = pm.getElementsByTagName('name')[0];
-                const descEl = pm.getElementsByTagName('description')[0];
-                
-                const name = nameEl ? nameEl.textContent.trim() : `Obje #${i + 1}`;
-                const desc = descEl ? descEl.textContent.replace(/<[^>]*>?/gm, ' ').trim() : '';
-                
-                // İsim ve açıklamaya göre otomatik mühendislik kategorisi belirle
-                const meta = classifyFeature(name, desc);
-
-                // 1. Noktalar (<Point>)
-                const points = pm.getElementsByTagName('Point');
-                for (let p = 0; p < points.length; p++) {
-                    const coordEl = points[p].getElementsByTagName('coordinates')[0];
-                    if (coordEl) {
-                        const coords = parseCoordinateString(coordEl.textContent);
-                        if (coords.length > 0) {
-                            parsedPoints.push({
-                                id: `pt_${i}_${p}`,
-                                name,
-                                desc,
-                                category: meta.category,
-                                label: meta.label,
-                                color: meta.color,
-                                lat: coords[0].lat,
-                                lon: coords[0].lon,
-                                ele: coords[0].ele
-                            });
-                        }
-                    }
-                }
-
-                // 2. Çizgiler (<LineString> - Boru Aksı, İrtifak Sınırı vb.)
-                const lineStrings = pm.getElementsByTagName('LineString');
-                for (let l = 0; l < lineStrings.length; l++) {
-                    const coordEl = lineStrings[l].getElementsByTagName('coordinates')[0];
-                    if (coordEl) {
-                        const rawCoords = parseCoordinateString(coordEl.textContent);
-                        if (rawCoords.length >= 2) {
-                            // Uzun segmentleri AR'da pürüzsüz çizmek için 15 metrede bir ara düğüm ekle
-                            const densified = densifyLine(rawCoords, 15);
-                            parsedLines.push({
-                                id: `ln_${i}_${l}`,
-                                name,
-                                desc,
-                                category: meta.category,
-                                label: meta.label,
-                                color: meta.color,
-                                coords: densified
-                            });
-
-                            // Çizginin başlangıç, bitiş ve her 100m'deki kritik kırılma noktalarını da seçilebilir nokta yap
-                            addLineKeyMarkers(parsedPoints, densified, name, desc, meta, `ln_${i}_${l}`);
-                        }
-                    }
-                }
-
-                // 3. Poligonlar (<Polygon> - İrtifak Alanları, Kamulaştırma Sınırları)
-                const polygons = pm.getElementsByTagName('Polygon');
-                for (let g = 0; g < polygons.length; g++) {
-                    const outerBoundary = polygons[g].getElementsByTagName('outerBoundaryIs')[0] || polygons[g];
-                    const coordEl = outerBoundary.getElementsByTagName('coordinates')[0];
-                    if (coordEl) {
-                        const rawCoords = parseCoordinateString(coordEl.textContent);
-                        if (rawCoords.length >= 3) {
-                            const densified = densifyLine(rawCoords, 15);
-                            parsedLines.push({
-                                id: `pg_${i}_${g}`,
-                                name,
-                                desc,
-                                category: 'easement',
-                                label: 'İRTİFAK ALANI',
-                                color: '#22d3ee',
-                                coords: densified
-                            });
-                        }
-                    }
-                }
-            }
-
-            state.fileName = fileName;
-            state.points = parsedPoints;
-            state.lines = parsedLines;
-
-            // Üst barı güncelle
-            document.getElementById('activeFileName').textContent = fileName;
-            const countBadge = document.getElementById('featureCountBadge');
-            countBadge.textContent = `${parsedLines.length} Hat • ${parsedPoints.length} Nokta`;
-            countBadge.classList.remove('hidden');
-
-            // Eğer GPS henüz yoksa veya simülasyon modundaysa kullanıcıyı hattın ortasına konumlandır
-            if (state.userLat === null || state.simMode) {
-                jumpToRouteCenter();
-            }
-
-            showToast(`Yüklendi: ${parsedLines.length} hat çizgisi, ${parsedPoints.length} nokta.`);
+          }
         }
 
-        /**
-         * KML koordinat metnini ("lon,lat,ele lon,lat,ele") diziye çevirir
-         */
-        function parseCoordinateString(str) {
-            const result = [];
-            const tokens = str.trim().split(/\s+/);
-            for (const token of tokens) {
-                const parts = token.split(',');
-                if (parts.length >= 2) {
-                    const lon = parseFloat(parts[0]);
-                    const lat = parseFloat(parts[1]);
-                    const ele = parts.length >= 3 ? parseFloat(parts[2]) : 0;
-                    if (!isNaN(lat) && !isNaN(lon)) {
-                        result.push({ lat, lon, ele });
-                    }
-                }
+        const points = pm.getElementsByTagName('Point');
+        for (let j = 0; j < points.length; j++) {
+          const coordsEl = points[j].getElementsByTagName('coordinates')[0];
+          if (coordsEl) {
+            const pts = parseCoordinates(coordsEl.textContent);
+            if (pts.length > 0) {
+              totalPoints += 1;
+              features.push({ type: 'point', name, point: pts[0] });
             }
-            return result;
+          }
         }
+      }
 
-        /**
-         * İsim ve açıklamaya göre Boru Aksı / İrtifak / Özel Geçiş sınıflandırması
-         */
-        function classifyFeature(name, desc) {
-            const text = `${name} ${desc}`.toLowerCase();
-            if (text.includes('irtifak') || text.includes('sınır') || text.includes('sinir') || text.includes('kamulaştırma') || text.includes('koridor')) {
-                return { category: 'easement', label: 'İRTİFAK SINIRI', color: '#22d3ee' }; // Cyan
+      state.features = features;
+      const lineCount = features.filter(f => f.type === 'line').length;
+      document.getElementById('stats-badge').textContent = `${lineCount} Hat • ${totalPoints} Nokta`;
+    }
+
+    function parseCoordinates(raw) {
+      return raw.trim().split(/\s+/).map(pair => {
+        const parts = pair.split(',');
+        if (parts.length < 2) return null;
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
+        if (isNaN(lat) || isNaN(lon)) return null;
+        return { lat, lon };
+      }).filter(Boolean);
+    }
+
+    // --- JEODEZİK HESAPLAMALAR (METRE CİNSİNDEN YEREL DÜZLEM) ---
+    function toLocalMeters(lat, lon) {
+      const R = 6378137;
+      const dLat = (lat - state.userLat) * Math.PI / 180;
+      const dLon = (lon - state.userLon) * Math.PI / 180;
+      const meanLat = ((lat + state.userLat) / 2) * Math.PI / 180;
+      const north = dLat * R;
+      const east = dLon * R * Math.cos(meanLat);
+      return { east, north };
+    }
+
+    function getEffectiveHeading() {
+      const base = state.simMode ? state.simHeading : state.heading;
+      return (base + state.headingOffset + 360) % 360;
+    }
+
+    // --- AR KAMERA PROJEKSİYONU VE ÇİZİM DÖNGÜSÜ ---
+    function renderLoop() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      arCtx.clearRect(0, 0, w, h);
+
+      const heading = getEffectiveHeading();
+      updateCompassUI(heading);
+
+      if (state.userLat !== null && state.features.length > 0) {
+        drawAROverlays(w, h, heading);
+        drawRadar(heading);
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    function updateCompassUI(deg) {
+      const dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
+      const dir = dirs[Math.round(deg / 45) % 8];
+      document.getElementById('compass-readout').textContent =
+        `${String(Math.round(deg)).padStart(3, '0')}° ${dir}`;
+    }
+
+    function projectPoint(east, north, headingDeg, w, h) {
+      const rad = headingDeg * Math.PI / 180;
+      // Kamera eksenine göre ileri (z) ve sağ/sol (x) mesafesi
+      const forward = north * Math.cos(rad) + east * Math.sin(rad);
+      const right = east * Math.cos(rad) - north * Math.sin(rad);
+
+      if (forward <= 0.8) return null; // Kameranın arkasında
+
+      const fovH = 62 * Math.PI / 180; // Yatay görüş açısı
+      const focal = (w / 2) / Math.tan(fovH / 2);
+
+      // Eğim (pitch) hesabı
+      const pitchRad = state.pitch * Math.PI / 180;
+      const yWorld = -state.eyeHeight; // Zemin seviyesi
+
+      const zCam = forward * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
+      const yCam = forward * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+
+      if (zCam <= 0.5) return null;
+
+      const screenX = (w / 2) + (right / zCam) * focal;
+      const screenY = (h / 2) - (yCam / zCam) * focal;
+
+      return { x: screenX, y: screenY, dist: Math.hypot(east, north) };
+    }
+
+    function drawAROverlays(w, h, heading) {
+      state.features.forEach(feat => {
+        if (feat.type === 'line') {
+          const projected = [];
+          for (let i = 0; i < feat.points.length; i++) {
+            const m = toLocalMeters(feat.points[i].lat, feat.points[i].lon);
+            const dist = Math.hypot(m.east, m.north);
+            if (dist > state.maxRange) {
+              projected.push(null);
+              continue;
             }
-            if (text.includes('aks') || text.includes('boru') || text.includes('hat') || text.includes('dgbh') || text.includes('centerline')) {
-                return { category: 'axis', label: 'BORU AKSI', color: '#f59e0b' }; // Safety Amber
+            projected.push(projectPoint(m.east, m.north, heading, w, h));
+          }
+
+          arCtx.save();
+          arCtx.beginPath();
+          let drawing = false;
+          for (let i = 0; i < projected.length; i++) {
+            const p = projected[i];
+            if (!p) {
+              drawing = false;
+              continue;
             }
-            return { category: 'point', label: 'SAHA NOKTASI', color: '#10b981' }; // Emerald
-        }
-
-        /**
-         * Uzun çizgi segmentleri arasına düzenli aralıklarla ara noktalar ekler (AR perspektifi için)
-         */
-        function densifyLine(coords, stepMeters) {
-            const dense = [coords[0]];
-            for (let i = 0; i < coords.length - 1; i++) {
-                const p1 = coords[i];
-                const p2 = coords[i + 1];
-                const dist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-                if (dist > stepMeters) {
-                    const steps = Math.min(40, Math.floor(dist / stepMeters));
-                    for (let s = 1; s < steps; s++) {
-                        const t = s / steps;
-                        dense.push({
-                            lat: p1.lat + (p2.lat - p1.lat) * t,
-                            lon: p1.lon + (p2.lon - p1.lon) * t,
-                            ele: (p1.ele || 0) + ((p2.ele || 0) - (p1.ele || 0)) * t
-                        });
-                    }
-                }
-                dense.push(p2);
-            }
-            return dense;
-        }
-
-        /**
-         * Hat üzerindeki kritik kırılma noktalarını AR etiketleri olarak ekler
-         */
-        function addLineKeyMarkers(pointsArr, coords, lineName, desc, meta, lineId) {
-            let accumDist = 0;
-            pointsArr.push({
-                id: `${lineId}_start`,
-                name: `${lineName} (Başlangıç)`,
-                desc,
-                category: meta.category,
-                label: meta.label,
-                color: meta.color,
-                lat: coords[0].lat,
-                lon: coords[0].lon
-            });
-
-            for (let i = 1; i < coords.length; i++) {
-                accumDist += haversineDistance(coords[i - 1].lat, coords[i - 1].lon, coords[i].lat, coords[i].lon);
-                if (accumDist >= 100) {
-                    pointsArr.push({
-                        id: `${lineId}_km_${i}`,
-                        name: `${lineName}`,
-                        desc: `Hat üzeri kontrol noktası. ${desc}`,
-                        category: meta.category,
-                        label: meta.label,
-                        color: meta.color,
-                        lat: coords[i].lat,
-                        lon: coords[i].lon
-                    });
-                    accumDist = 0;
-                }
-            }
-        }
-
-        /**
-         * Örnek Mut-Mersin 40" DGBH Simülasyon Verisi Oluşturur
-         */
-        function loadDemoDataset() {
-            // Mut - Mersin güzergahı üzerinde temsili 40" DGBH Boru Aksı ve ±15m İrtifak Sınırları
-            const baseLat = 36.643500;
-            const baseLon = 33.436800;
-
-            const demoKml = `<?xml version="1.0" encoding="UTF-8"?>
-            <kml xmlns="http://www.opengis.net/kml/2.2">
-              <Document>
-                <name>Mut-Mersin 40 DGBH Simülasyon</name>
-                <Placemark>
-                  <name>40" DGBH Boru Aksı (KM 14+200 - 14+850)</name>
-                  <description>40 inç Yüksek Basınç Doğal Gaz Ana İletim Boru Hattı Merkez Aksı. Derinlik: 1.80m</description>
-                  <LineString>
-                    <coordinates>
-                      33.436500,36.643200,295 33.437200,36.643850,298 33.438100,36.644400,302 33.439200,36.644800,305 33.440400,36.645100,308
-                    </coordinates>
-                  </LineString>
-                </Placemark>
-                <Placemark>
-                  <name>Sol İrtifak Sınırı (+15m)</name>
-                  <description>Daimi İrtifak Hakkı Kuzey/Sol Sınır Çizgisi</description>
-                  <LineString>
-                    <coordinates>
-                      33.436380,36.643310,295 33.437080,36.643960,298 33.437980,36.644510,302 33.439080,36.644910,305 33.440280,36.645210,308
-                    </coordinates>
-                  </LineString>
-                </Placemark>
-                <Placemark>
-                  <name>Sağ İrtifak Sınırı (-15m)</name>
-                  <description>Daimi İrtifak Hakkı Güney/Sağ Sınır Çizgisi</description>
-                  <LineString>
-                    <coordinates>
-                      33.436620,36.643090,295 33.437320,36.643740,298 33.438220,36.644290,302 33.439320,36.644690,305 33.440520,36.644990,308
-                    </coordinates>
-                  </LineString>
-                </Placemark>
-                <Placemark>
-                  <name>KM 14+350 Sömestr / Dirsek Noktası (TP-14)</name>
-                  <description>Yatay kurp kırılma noktası. Kaynak No: W-412</description>
-                  <Point><coordinates>33.437200,36.643850,298</coordinates></Point>
-                </Placemark>
-                <Placemark>
-                  <name>Dere Geçişi & Beton Ağırlık Başlangıcı</name>
-                  <description>Mevsimsel dere geçişi - C30 beton kaplama ve ikaz bandı kontrol noktası</description>
-                  <Point><coordinates>33.438100,36.644400,302</coordinates></Point>
-                </Placemark>
-                <Placemark>
-                  <name>Katodik Koruma Ölçüm Kutusu (KP-08)</name>
-                  <description>Test postası ve anot yatağı bağlantı noktası</description>
-                  <Point><coordinates>33.439200,36.644800,305</coordinates></Point>
-                </Placemark>
-              </Document>
-            </kml>`;
-
-            parseKMLContent(demoKml, 'Mut-Mersin 40 DGBH (Örnek).kmz');
-            document.getElementById('welcomeModal').classList.add('hidden');
-            
-            // Örnek veride kullanıcıyı hattın hemen 25m güneyine yerleştir ve kuzeydoğuya baktır
-            state.userLat = baseLat;
-            state.userLon = baseLon;
-            state.gpsAccuracy = 3.2;
-            state.heading = 42;
-            state.smoothHeading = 42;
-            enableSimMode(true);
-            startSensorsAndCamera();
-        }
-
-        // ============================================================================
-        // 3. KAMERA, GPS VE PUSULA (DEVICE ORIENTATION) SENSÖRLERİ
-        // ============================================================================
-        async function startSensorsAndCamera() {
-            // 1. Arka Kamerayı Başlat
-            try {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: { ideal: 'environment' },
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
-                        },
-                        audio: false
-                    });
-                    videoEl.srcObject = stream;
-                    state.cameraActive = true;
-                }
-            } catch (err) {
-                console.warn('Kamera açılamadı, simülasyon arka planı kullanılıyor:', err);
-                state.cameraActive = false;
-                showToast('Kamera erişimi yok — Simülasyon arka planı aktif.');
-            }
-
-            // 2. GPS Konum Takibini Başlat
-            if ('geolocation' in navigator) {
-                navigator.geolocation.watchPosition(
-                    (pos) => {
-                        if (state.simMode) return; // Simülasyon modundaysa gerçek GPS'i ezme
-                        state.userLat = pos.coords.latitude;
-                        state.userLon = pos.coords.longitude;
-                        state.gpsAccuracy = pos.coords.accuracy;
-                        updateTelemetryUI();
-                    },
-                    (err) => {
-                        console.warn('GPS Hatası:', err);
-                        if (state.userLat === null) {
-                            showToast('GPS sinyali alınamıyor. Test Modu ile hattı inceleyebilirsiniz.');
-                        }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 1000,
-                        timeout: 10000
-                    }
-                );
-            }
-
-            // 3. Pusula ve Eğim Sensörlerini Başlat (iOS 13+ izin kontrolü dahil)
-            await requestOrientationPermission();
-        }
-
-        async function requestOrientationPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        bindOrientationListeners();
-                        showToast('Pusula ve jiroskop sensörleri aktif.');
-                    } else {
-                        showToast('Pusula izni reddedildi. Manuel Test Modunu kullanabilirsiniz.');
-                    }
-                } catch (e) {
-                    console.warn('iOS sensör izin hatası:', e);
-                }
+            if (!drawing) {
+              arCtx.moveTo(p.x, p.y);
+              drawing = true;
             } else {
-                bindOrientationListeners();
+              arCtx.lineTo(p.x, p.y);
             }
-        }
+          }
 
-        function bindOrientationListeners() {
-            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.addEventListener('deviceorientation', handleOrientation, true);
-        }
+          if (feat.isAxis) {
+            arCtx.strokeStyle = '#f59e0b'; // Turuncu Boru Aksı
+            arCtx.lineWidth = 6;
+            arCtx.setLineDash([]);
+          } else {
+            arCtx.strokeStyle = '#22d3ee'; // Camgöbeği İrtifak Sınırı
+            arCtx.lineWidth = 4;
+            arCtx.setLineDash([12, 8]);
+          }
+          arCtx.lineCap = 'round';
+          arCtx.lineJoin = 'round';
+          arCtx.stroke();
 
-        function handleOrientation(event) {
-            if (state.simMode) return;
-
-            let compassHeading = null;
-
-            // iOS WebKit pusula açısı
-            if (typeof event.webkitCompassHeading === 'number') {
-                compassHeading = event.webkitCompassHeading;
-            } 
-            // Android / Standart mutlak pusula
-            else if (event.alpha !== null) {
-                compassHeading = (360 - event.alpha) % 360;
+          // Köşe kırık noktaları
+          arCtx.setLineDash([]);
+          projected.forEach((p, idx) => {
+            if (p && idx % 2 === 0 && p.x > 0 && p.x < w && p.y > 0 && p.y < h) {
+              arCtx.fillStyle = feat.isAxis ? '#fef08a' : '#cffafe';
+              arCtx.beginPath();
+              arCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+              arCtx.fill();
             }
+          });
+          arCtx.restore();
+        } else if (feat.type === 'point') {
+          const m = toLocalMeters(feat.point.lat, feat.point.lon);
+          const dist = Math.hypot(m.east, m.north);
+          if (dist <= state.maxRange) {
+            const p = projectPoint(m.east, m.north, heading, w, h);
+            if (p && p.x > 20 && p.x < w - 20 && p.y > 40 && p.y < h - 40) {
+              arCtx.save();
+              arCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              arCtx.strokeStyle = '#f59e0b';
+              arCtx.lineWidth = 1.5;
+              const label = `${feat.name} (${Math.round(dist)}m)`;
+              arCtx.font = 'bold 11px Inter, sans-serif';
+              const tw = arCtx.measureText(label).width + 14;
+              arCtx.beginPath();
+              arCtx.roundRect(p.x - tw / 2, p.y - 34, tw, 22, 8);
+              arCtx.fill();
+              arCtx.stroke();
 
-            if (compassHeading !== null && !isNaN(compassHeading)) {
-                state.heading = compassHeading;
+              arCtx.fillStyle = '#fff';
+              arCtx.textAlign = 'center';
+              arCtx.fillText(label, p.x, p.y - 19);
+              arCtx.restore();
             }
-
-            // Telefon dikey tutulduğunda beta ~90 derecedir. Ufuk çizgisi için pitch hesapla:
-            if (typeof event.beta === 'number') {
-                // Dikey tutuşta (beta = 90) pitch = 0 derece
-                let rawPitch = event.beta - 90;
-                rawPitch = Math.max(-60, Math.min(60, rawPitch));
-                state.pitch = rawPitch;
-            }
+          }
         }
-
-        // ============================================================================
-        // 4. JEODEZİK HESAPLAMALAR (HAVERSINE MESAFE & İSTİKAMET/BEARING)
-        // ============================================================================
-        const DEG2RAD = Math.PI / 180;
-        const RAD2DEG = 180 / Math.PI;
-        const EARTH_RADIUS = 6371000; // metre
-
-        function haversineDistance(lat1, lon1, lat2, lon2) {
-            const dLat = (lat2 - lat1) * DEG2RAD;
-            const dLon = (lon2 - lon1) * DEG2RAD;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * DEG2RAD) * Math.cos(lat2 * DEG2RAD) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return EARTH_RADIUS * c;
-        }
-
-        function calculateBearing(lat1, lon1, lat2, lon2) {
-            const y = Math.sin((lon2 - lon1) * DEG2RAD) * Math.cos(lat2 * DEG2RAD);
-            const x = Math.cos(lat1 * DEG2RAD) * Math.sin(lat2 * DEG2RAD) -
-                      Math.sin(lat1 * DEG2RAD) * Math.cos(lat2 * DEG2RAD) * Math.cos((lon2 - lon1) * DEG2RAD);
-            const brng = Math.atan2(y, x) * RAD2DEG;
-            return (brng + 360) % 360;
-        }
-
-        function normalizeAngle180(angle) {
-            let a = (angle + 180) % 360;
-            if (a < 0) a += 360;
-            return a - 180;
-        }
-
-        function getCardinalDirection(deg) {
-            const dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
-            const idx = Math.round(deg / 45) % 8;
-            return dirs[idx];
-        }
-
-        function formatDistance(meters) {
-            if (meters < 1000) return `${Math.round(meters)} m`;
-            return `${(meters / 1000).toFixed(2)} km`;
-        }
-
-        // ============================================================================
-        // 5. AR PROJEKSİYON VE ÇİZİM MOTORU (60 FPS)
-        // ============================================================================
-        function resizeCanvases() {
-            arCanvas.width = window.innerWidth * window.devicePixelRatio;
-            arCanvas.height = window.innerHeight * window.devicePixelRatio;
-            arCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-
-            const radarRect = radarCanvas.getBoundingClientRect();
-            if (radarRect.width > 0) {
-                radarCanvas.width = radarRect.width * window.devicePixelRatio;
-                radarCanvas.height = radarRect.height * window.devicePixelRatio;
-                radarCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-            }
-        }
-        window.addEventListener('resize', resizeCanvases);
-
-        /**
-         * Dünya koordinatını (Lat, Lon) telefon ekranı (X, Y) piksel koordinatına dönüştürür
-         */
-        function projectToScreen(targetLat, targetLon, effectiveHeading, effectivePitch, width, height) {
-            const dist = haversineDistance(state.userLat, state.userLon, targetLat, targetLon);
-            const bearing = calculateBearing(state.userLat, state.userLon, targetLat, targetLon);
-            
-            // Kullanıcının baktığı yöne göre yatay açı farkı (-180 ile +180)
-            const deltaYaw = normalizeAngle180(bearing - effectiveHeading);
-            
-            // Yatay ekran X konumu
-            const x = (width / 2) + (deltaYaw / (state.hfov / 2)) * (width / 2);
-
-            // Zemin perspektifi: Göz yüksekliği ~1.55m kabul edilerek mesafeye bağlı alçalma açısı
-            const eyeHeight = 1.55;
-            const groundDepressionAngle = Math.atan2(eyeHeight, Math.max(2, dist)) * RAD2DEG;
-            const targetElevationAngle = -groundDepressionAngle;
-            
-            const deltaPitch = targetElevationAngle - effectivePitch;
-            const y = (height / 2) - (deltaPitch / (state.vfov / 2)) * (height / 2);
-
-            const inFront = Math.abs(deltaYaw) < 95;
-            return { x, y, dist, bearing, deltaYaw, inFront };
-        }
-
-        function renderLoop() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-
-            // Pusula ve eğim için yumuşak geçiş (Low-pass filter)
-            const yawDiff = normalizeAngle180(state.heading - state.smoothHeading);
-            state.smoothHeading = (state.smoothHeading + yawDiff * 0.18 + 360) % 360;
-            state.smoothPitch += (state.pitch - state.smoothPitch) * 0.18;
-
-            const effectiveHeading = (state.smoothHeading + state.compassOffset + 360) % 360;
-            const effectivePitch = state.smoothPitch;
-
-            // Üst telemetri pusula bilgisini güncelle
-            document.getElementById('headingText').textContent = `${Math.round(effectiveHeading).toString().padStart(3, '0')}° ${getCardinalDirection(effectiveHeading)}`;
-
-            // AR Canvas'ı temizle
-            arCtx.clearRect(0, 0, w, h);
-
-            // Ufuk çizgisi ve merkez mühendislik nişangahını çiz
-            drawCrosshairAndHorizon(w, h, effectivePitch);
-
-            if (state.userLat !== null && state.userLon !== null) {
-                // 1. Hat Çizgilerini (Boru Aksı & İrtifak Sınırları) Canvas'a çiz
-                drawARLines(w, h, effectiveHeading, effectivePitch);
-
-                // 2. Nokta Etiketlerini HTML katmanında konumlandır
-                updateARPointMarkers(w, h, effectiveHeading, effectivePitch);
-
-                // 3. Taktik Radarı Çiz
-                drawTacticalRadar(effectiveHeading);
-            }
-
-            requestAnimationFrame(renderLoop);
-        }
-
-        function drawCrosshairAndHorizon(w, h, pitch) {
-            const horizonY = (h / 2) + (pitch / (state.vfov / 2)) * (h / 2);
-            
-            // İnce Ufuk Çizgisi
-            arCtx.save();
-            arCtx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-            arCtx.lineWidth = 1;
-            arCtx.setLineDash([6, 6]);
-            arCtx.beginPath();
-            arCtx.moveTo(20, horizonY);
-            arCtx.lineTo(w - 20, horizonY);
-            arCtx.stroke();
-            arCtx.restore();
-
-            // Merkez Nişangah (Reticle)
-            const cx = w / 2;
-            const cy = h / 2;
-            arCtx.save();
-            arCtx.strokeStyle = 'rgba(248, 250, 252, 0.45)';
-            arCtx.lineWidth = 1.5;
-            arCtx.beginPath();
-            arCtx.arc(cx, cy, 14, 0, Math.PI * 2);
-            arCtx.moveTo(cx - 22, cy);
-            arCtx.lineTo(cx - 8, cy);
-            arCtx.moveTo(cx + 8, cy);
-            arCtx.lineTo(cx + 22, cy);
-            arCtx.moveTo(cx, cy - 22);
-            arCtx.lineTo(cx, cy - 8);
-            arCtx.stroke();
-            arCtx.restore();
-        }
-
-        function drawARLines(w, h, effectiveHeading, effectivePitch) {
-            for (const line of state.lines) {
-                if (line.category === 'axis' && !state.layers.axis) continue;
-                if (line.category === 'easement' && !state.layers.easement) continue;
-
-                const projected = [];
-                let anyInRange = false;
-
-                for (const pt of line.coords) {
-                    const p = projectToScreen(pt.lat, pt.lon, effectiveHeading, effectivePitch, w, h);
-                    if (p.dist <= state.maxDistance) anyInRange = true;
-                    projected.push(p);
-                }
-
-                if (!anyInRange) continue;
-
-                arCtx.save();
-                arCtx.lineCap = 'round';
-                arCtx.lineJoin = 'round';
-
-                // Boru aksı daha kalın ve parlak, irtifak sınırı kesikli çizgi
-                if (line.category === 'axis') {
-                    arCtx.strokeStyle = line.color;
-                    arCtx.lineWidth = 6;
-                    arCtx.shadowColor = 'rgba(245, 158, 11, 0.75)';
-                    arCtx.shadowBlur = 12;
-                } else {
-                    arCtx.strokeStyle = line.color;
-                    arCtx.lineWidth = 3.5;
-                    arCtx.setLineDash([12, 8]);
-                    arCtx.shadowColor = 'rgba(34, 211, 238, 0.6)';
-                    arCtx.shadowBlur = 8;
-                }
-
-                arCtx.beginPath();
-                let penDown = false;
-
-                for (let i = 0; i < projected.length; i++) {
-                    const p = projected[i];
-                    if (p.inFront && p.dist <= state.maxDistance) {
-                        if (!penDown) {
-                            arCtx.moveTo(p.x, p.y);
-                            penDown = true;
-                        } else {
-                            arCtx.lineTo(p.x, p.y);
-                        }
-                    } else {
-                        penDown = false;
-                    }
-                }
-                arCtx.stroke();
-
-                // Boru aksı düğüm noktalarına küçük parlak halkalar çiz
-                if (line.category === 'axis') {
-                    arCtx.setLineDash([]);
-                    arCtx.fillStyle = '#ffffff';
-                    for (let i = 0; i < projected.length; i += 2) {
-                        const p = projected[i];
-                        if (p.inFront && p.dist <= state.maxDistance && p.x > 0 && p.x < w && p.y > 0 && p.y < h) {
-                            arCtx.beginPath();
-                            arCtx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-                            arCtx.fill();
-                        }
-                    }
-                }
-
-                arCtx.restore();
-            }
-        }
-
-        // Aktif HTML pin havuzu (performans için yeniden kullanılır)
-        const activePinElements = new Map();
-
-        function updateARPointMarkers(w, h, effectiveHeading, effectivePitch) {
-            let nearestLeft = null;
-            let nearestRight = null;
-            const visibleIds = new Set();
-
-            for (const pt of state.points) {
-                if (pt.category === 'axis' && !state.layers.axis) continue;
-                if (pt.category === 'easement' && !state.layers.easement) continue;
-                if (pt.category === 'point' && !state.layers.points) continue;
-
-                const proj = projectToScreen(pt.lat, pt.lon, effectiveHeading, effectivePitch, w, h);
-                if (proj.dist > state.maxDistance) continue;
-
-                // Ekran dışındaki en yakın hedefleri takip et (Sol/Sağ yön okları için)
-                if (proj.deltaYaw < -(state.hfov / 2)) {
-                    if (!nearestLeft || proj.dist < nearestLeft.dist) {
-                        nearestLeft = { name: pt.name, dist: proj.dist };
-                    }
-                    continue;
-                }
-                if (proj.deltaYaw > (state.hfov / 2)) {
-                    if (!nearestRight || proj.dist < nearestRight.dist) {
-                        nearestRight = { name: pt.name, dist: proj.dist };
-                    }
-                    continue;
-                }
-
-                // Ekran içinde görünür
-                visibleIds.add(pt.id);
-                let el = activePinElements.get(pt.id);
-                if (!el) {
-                    el = createPinElement(pt);
-                    markersContainer.appendChild(el);
-                    activePinElements.set(pt.id, el);
-                }
-
-                // Ekran sınırları içinde tut (üst/alt taşmayı yumuşak sınırla)
-                const clampedY = Math.max(95, Math.min(h - 110, proj.y));
-                el.style.left = `${proj.x}px`;
-                el.style.top = `${clampedY}px`;
-                el.querySelector('.pin-dist').textContent = `${formatDistance(proj.dist)} • ${Math.round(proj.bearing)}°`;
-            }
-
-            // Görüş alanından çıkan pinleri DOM'dan kaldır
-            for (const [id, el] of activePinElements.entries()) {
-                if (!visibleIds.has(id)) {
-                    el.remove();
-                    activePinElements.delete(id);
-                }
-            }
-
-            // Sol / Sağ ekran dışı ok göstergelerini güncelle
-            const leftBanner = document.getElementById('offscreenLeft');
-            const rightBanner = document.getElementById('offscreenRight');
-            if (nearestLeft && visibleIds.size === 0) {
-                leftBanner.classList.remove('hidden');
-                document.getElementById('offscreenLeftText').textContent = `${formatDistance(nearestLeft.dist)}`;
-            } else {
-                leftBanner.classList.add('hidden');
-            }
-
-            if (nearestRight && visibleIds.size === 0) {
-                rightBanner.classList.remove('hidden');
-                document.getElementById('offscreenRightText').textContent = `${formatDistance(nearestRight.dist)}`;
-            } else {
-                rightBanner.classList.add('hidden');
-            }
-        }
-
-        function createPinElement(pt) {
-            const div = document.createElement('div');
-            div.className = 'ar-pin flex flex-col items-center cursor-pointer';
-            div.innerHTML = `
-                <div class="glass-hud px-2.5 py-1.5 rounded-xl shadow-lg border-l-4 max-w-[175px]" style="border-left-color: ${pt.color}">
-                    <div class="text-[11px] font-bold text-white truncate">${pt.name}</div>
-                    <div class="pin-dist text-[10px] font-mono font-semibold" style="color: ${pt.color}">-- m</div>
-                </div>
-                <div class="w-0.5 h-4" style="background-color: ${pt.color}"></div>
-                <div class="w-2.5 h-2.5 rounded-full border-2 border-white shadow" style="background-color: ${pt.color}"></div>
-            `;
-            div.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openFeatureDetail(pt);
-            });
-            return div;
-        }
-
-        // ============================================================================
-        // 6. TAKTİK RADAR ÇİZİMİ (SOL ALT)
-        // ============================================================================
-        function drawTacticalRadar(effectiveHeading) {
-            const rect = radarCanvas.getBoundingClientRect();
-            const size = rect.width;
-            if (!size) return;
-            const cx = size / 2;
-            const cy = size / 2;
-            const radius = (size / 2) - 4;
-
-            radarCtx.clearRect(0, 0, size, size);
-
-            // Radar halkaları
-            radarCtx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
-            radarCtx.lineWidth = 1;
-            [0.33, 0.66, 1].forEach(ratio => {
-                radarCtx.beginPath();
-                radarCtx.arc(cx, cy, radius * ratio, 0, Math.PI * 2);
-                radarCtx.stroke();
-            });
-
-            // Kullanıcının görüş konisi (FOV) - Yukarı her zaman kullanıcının baktığı yöndür (Head-Up Radar)
-            const halfFovRad = (state.hfov / 2) * DEG2RAD;
-            radarCtx.fillStyle = 'rgba(245, 158, 11, 0.16)';
-            radarCtx.beginPath();
-            radarCtx.moveTo(cx, cy);
-            radarCtx.arc(cx, cy, radius, -Math.PI / 2 - halfFovRad, -Math.PI / 2 + halfFovRad);
-            radarCtx.closePath();
-            radarCtx.fill();
-
-            // Kuzey (K) göstergesi
-            const northAngle = (-effectiveHeading - 90) * DEG2RAD;
-            const nx = cx + Math.cos(northAngle) * (radius - 8);
-            const ny = cy + Math.sin(northAngle) * (radius - 8);
-            radarCtx.fillStyle = '#f43f5e';
-            radarCtx.font = 'bold 9px JetBrains Mono';
-            radarCtx.textAlign = 'center';
-            radarCtx.textBaseline = 'middle';
-            radarCtx.fillText('K', nx, ny);
-
-            // Hat çizgilerini radara çiz
-            for (const line of state.lines) {
-                if (line.category === 'axis' && !state.layers.axis) continue;
-                if (line.category === 'easement' && !state.layers.easement) continue;
-
-                radarCtx.strokeStyle = line.color;
-                radarCtx.lineWidth = line.category === 'axis' ? 2.2 : 1.2;
-                radarCtx.beginPath();
-                let started = false;
-
-                for (const pt of line.coords) {
-                    const dist = haversineDistance(state.userLat, state.userLon, pt.lat, pt.lon);
-                    const brng = calculateBearing(state.userLat, state.userLon, pt.lat, pt.lon);
-                    const relAngle = (brng - effectiveHeading - 90) * DEG2RAD;
-                    const r = (dist / state.radarRange) * radius;
-
-                    const px = cx + Math.cos(relAngle) * r;
-                    const py = cy + Math.sin(relAngle) * r;
-
-                    if (!started) {
-                        radarCtx.moveTo(px, py);
-                        started = true;
-                    } else {
-                        radarCtx.lineTo(px, py);
-                    }
-                }
-                radarCtx.stroke();
-            }
-
-            // Noktaları radara çiz
-            for (const pt of state.points) {
-                if (pt.category === 'point' && !state.layers.points) continue;
-                const dist = haversineDistance(state.userLat, state.userLon, pt.lat, pt.lon);
-                if (dist > state.radarRange) continue;
-
-                const brng = calculateBearing(state.userLat, state.userLon, pt.lat, pt.lon);
-                const relAngle = (brng - effectiveHeading - 90) * DEG2RAD;
-                const r = (dist / state.radarRange) * radius;
-
-                radarCtx.fillStyle = pt.color;
-                radarCtx.beginPath();
-                radarCtx.arc(cx + Math.cos(relAngle) * r, cy + Math.sin(relAngle) * r, 2.5, 0, Math.PI * 2);
-                radarCtx.fill();
-            }
-
-            // Merkez kullanıcı noktası
-            radarCtx.fillStyle = '#ffffff';
-            radarCtx.beginPath();
-            radarCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-            radarCtx.fill();
-        }
-
-        // ============================================================================
-        // 7. KULLANICI ETKİLEŞİMLERİ, TEST MODU VE MODALLAR
-        // ============================================================================
-        function updateTelemetryUI() {
-            if (state.userLat !== null && state.userLon !== null) {
-                document.getElementById('gpsCoordsText').textContent = 
-                    `${state.userLat.toFixed(6)}°K, ${state.userLon.toFixed(6)}°D`;
-            }
-
-            const acc = state.gpsAccuracy;
-            const dot = document.getElementById('gpsDot');
-            const text = document.getElementById('gpsAccText');
-
-            if (acc !== null) {
-                text.textContent = `±${acc.toFixed(1)}m`;
-                dot.classList.remove('bg-rose-500', 'bg-amber-400', 'bg-emerald-400', 'animate-pulse');
-                if (acc <= 5) {
-                    dot.classList.add('bg-emerald-400');
-                } else if (acc <= 15) {
-                    dot.classList.add('bg-amber-400');
-                } else {
-                    dot.classList.add('bg-rose-500');
-                }
-            }
-        }
-
-        function jumpToRouteCenter() {
-            let targetLat = null;
-            let targetLon = null;
-
-            if (state.lines.length > 0 && state.lines[0].coords.length > 0) {
-                const midIdx = Math.floor(state.lines[0].coords.length / 2);
-                targetLat = state.lines[0].coords[midIdx].lat;
-                targetLon = state.lines[0].coords[midIdx].lon;
-            } else if (state.points.length > 0) {
-                targetLat = state.points[0].lat;
-                targetLon = state.points[0].lon;
-            }
-
-            if (targetLat !== null) {
-                // Hattın 15 metre güneyine konumlandır ki hat karşıda net görünsün
-                state.userLat = targetLat - 0.00014;
-                state.userLon = targetLon;
-                state.gpsAccuracy = 2.5;
-                updateTelemetryUI();
-                showToast('Konum yüklenen KMZ hattının merkezine taşındı.');
-            } else {
-                showToast('Önce bir KMZ veya KML dosyası yükleyin.');
-            }
-        }
-
-        function moveSimUser(dEastMeters, dNorthMeters) {
-            if (!state.simMode) enableSimMode(true);
-            if (state.userLat === null) jumpToRouteCenter();
-            
-            const dLat = dNorthMeters / 111320;
-            const dLon = dEastMeters / (111320 * Math.cos(state.userLat * DEG2RAD));
-            state.userLat += dLat;
-            state.userLon += dLon;
-            updateTelemetryUI();
-        }
-
-        function enableSimMode(forceState) {
-            state.simMode = typeof forceState === 'boolean' ? forceState : !state.simMode;
-            const bar = document.getElementById('simControlBar');
-            const btn = document.getElementById('toggleSimBtn');
-
-            if (state.simMode) {
-                bar.classList.remove('hidden');
-                btn.classList.add('border-cyan-400', 'bg-cyan-950/60');
-                if (state.userLat === null) jumpToRouteCenter();
-            } else {
-                bar.classList.add('hidden');
-                btn.classList.remove('border-cyan-400', 'bg-cyan-950/60');
-            }
-        }
-
-        function openFeatureDetail(pt) {
-            const dist = state.userLat ? haversineDistance(state.userLat, state.userLon, pt.lat, pt.lon) : 0;
-            const brng = state.userLat ? calculateBearing(state.userLat, state.userLon, pt.lat, pt.lon) : 0;
-
-            const badge = document.getElementById('detailCategoryBadge');
-            badge.textContent = pt.label;
-            badge.style.color = pt.color;
-            badge.style.borderColor = pt.color;
-
-            document.getElementById('detailTitle').textContent = pt.name;
-            document.getElementById('detailDistance').textContent = formatDistance(dist);
-            document.getElementById('detailBearing').textContent = `${Math.round(brng)}° (${getCardinalDirection(brng)})`;
-            document.getElementById('detailCoords').textContent = `${pt.lat.toFixed(6)}° K, ${pt.lon.toFixed(6)}° D`;
-            document.getElementById('detailDescBox').textContent = pt.desc || 'Bu nokta için ek açıklama girilmemiş.';
-
-            document.getElementById('featureDetailModal').classList.remove('hidden');
-        }
-
-        let toastTimeout = null;
-        function showToast(msg) {
-            const banner = document.getElementById('toastBanner');
-            document.getElementById('toastText').textContent = msg;
-            banner.classList.remove('hidden');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => banner.classList.add('hidden'), 4000);
-        }
-
-        // Olay Dinleyicileri (Event Listeners)
-        document.getElementById('kmzFileInput').addEventListener('change', (e) => handleFileUpload(e.target.files[0]));
-        document.getElementById('welcomeFileInput').addEventListener('change', (e) => handleFileUpload(e.target.files[0]));
-        document.getElementById('loadDemoBtn').addEventListener('click', loadDemoDataset);
-
-        document.getElementById('toggleSimBtn').addEventListener('click', () => enableSimMode());
-        document.getElementById('jumpToRouteBtn').addEventListener('click', jumpToRouteCenter);
-
-        document.getElementById('simHeadingSlider').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            state.heading = val;
-            document.getElementById('simHeadingVal').textContent = `${val}°`;
+      });
+    }
+
+    function drawRadar(heading) {
+      const size = radarCanvas.width;
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = size / 2 - 4;
+      radarCtx.clearRect(0, 0, size, size);
+
+      // Halkalar
+      radarCtx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      radarCtx.lineWidth = 1;
+      [0.33, 0.66, 1].forEach(scale => {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, r * scale, 0, Math.PI * 2);
+        radarCtx.stroke();
+      });
+
+      // Bakış açısı konisi (her zaman yukarı bakar)
+      radarCtx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.arc(cx, cy, r, -Math.PI / 2 - 0.52, -Math.PI / 2 + 0.52);
+      radarCtx.closePath();
+      radarCtx.fill();
+
+      // Hatları radara çiz (kullanıcı yönüne göre döndürülmüş)
+      const rad = heading * Math.PI / 180;
+      state.features.forEach(feat => {
+        if (feat.type !== 'line') return;
+        radarCtx.beginPath();
+        let started = false;
+        feat.points.forEach(pt => {
+          const m = toLocalMeters(pt.lat, pt.lon);
+          const forward = m.north * Math.cos(rad) + m.east * Math.sin(rad);
+          const right = m.east * Math.cos(rad) - m.north * Math.sin(rad);
+          const px = cx + (right / state.maxRange) * r;
+          const py = cy - (forward / state.maxRange) * r;
+          if (!started) {
+            radarCtx.moveTo(px, py);
+            started = true;
+          } else {
+            radarCtx.lineTo(px, py);
+          }
         });
+        radarCtx.strokeStyle = feat.isAxis ? '#f59e0b' : '#22d3ee';
+        radarCtx.lineWidth = feat.isAxis ? 2.5 : 1.5;
+        radarCtx.stroke();
+      });
 
-        document.getElementById('simPitchSlider').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            state.pitch = val;
-            document.getElementById('simPitchVal').textContent = `${val}°`;
-        });
+      // Merkez kullanıcı noktası
+      radarCtx.fillStyle = '#fff';
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      radarCtx.fill();
+    }
 
-        // Radar menzili değiştirme
-        document.getElementById('radarRangeBtn').addEventListener('click', (e) => {
-            radarRangeIdx = (radarRangeIdx + 1) % RADAR_RANGES.length;
-            state.radarRange = RADAR_RANGES[radarRangeIdx];
-            e.target.textContent = state.radarRange >= 1000 ? `${state.radarRange / 1000} km` : `${state.radarRange} m`;
-        });
+    // --- KULLANICI ETKİLEŞİMLERİ VE BUTONLAR ---
+    function enterARMode() {
+      document.getElementById('landing-screen').classList.add('hidden');
+      document.getElementById('ar-hud').classList.remove('hidden');
+      startCamera();
+      startGPS();
+      // Android veya izin gerektirmeyen tarayıcılar için otomatik dinleme başlat
+      window.addEventListener('deviceorientationabsolute', onOrientationEvent, true);
+      window.addEventListener('deviceorientation', onOrientationEvent, true);
+      requestAnimationFrame(renderLoop);
+    }
 
-        // Ayarlar Çekmecesi Kontrolleri
-        document.getElementById('openSettingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.remove('hidden');
-        });
-        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.add('hidden');
-        });
+    document.getElementById('kmz-input-initial').addEventListener('change', (e) => {
+      if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+    });
 
-        document.getElementById('compassOffsetSlider').addEventListener('input', (e) => {
-            state.compassOffset = parseFloat(e.target.value);
-            document.getElementById('compassOffsetVal').textContent = `${state.compassOffset > 0 ? '+' : ''}${state.compassOffset}°`;
-        });
+    document.getElementById('kmz-input-hud').addEventListener('change', (e) => {
+      if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+    });
 
-        document.getElementById('resetCompassOffsetBtn').addEventListener('click', () => {
-            state.compassOffset = 0;
-            document.getElementById('compassOffsetSlider').value = 0;
-            document.getElementById('compassOffsetVal').textContent = '0°';
-        });
+    // Demo / Örnek Hat Başlatma
+    document.getElementById('btn-demo-start').addEventListener('click', () => {
+      const baseLat = 36.687200;
+      const baseLon = 34.325860;
+      state.userLat = baseLat;
+      state.userLon = baseLon;
+      state.simMode = true;
+      state.features = [
+        {
+          type: 'line',
+          name: 'Örnek Boru Aksı (40" DGBH)',
+          isAxis: true,
+          points: [
+            { lat: baseLat - 0.0005, lon: baseLon },
+            { lat: baseLat + 0.0003, lon: baseLon + 0.0001 },
+            { lat: baseLat + 0.0012, lon: baseLon + 0.0004 }
+          ]
+        },
+        {
+          type: 'line',
+          name: 'Sağ İrtifak Sınırı',
+          isAxis: false,
+          points: [
+            { lat: baseLat - 0.0005, lon: baseLon + 0.00012 },
+            { lat: baseLat + 0.0003, lon: baseLon + 0.00022 },
+            { lat: baseLat + 0.0012, lon: baseLon + 0.00052 }
+          ]
+        },
+        {
+          type: 'line',
+          name: 'Sol İrtifak Sınırı',
+          isAxis: false,
+          points: [
+            { lat: baseLat - 0.0005, lon: baseLon - 0.00012 },
+            { lat: baseLat + 0.0003, lon: baseLon - 0.00002 },
+            { lat: baseLat + 0.0012, lon: baseLon + 0.00028 }
+          ]
+        }
+      ];
+      document.getElementById('file-title').textContent = 'Örnek DGBH Simülasyonu';
+      document.getElementById('stats-badge').textContent = '3 Hat • 9 Nokta';
+      document.getElementById('sim-panel').classList.remove('hidden');
+      updateGPSUI();
+      enterARMode();
+    });
 
-        document.querySelectorAll('.dist-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const dist = parseInt(btn.dataset.dist, 10);
-                state.maxDistance = dist;
-                document.getElementById('maxDistVal').textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
-                document.querySelectorAll('.dist-btn').forEach(b => {
-                    b.className = 'dist-btn py-1.5 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300';
-                });
-                btn.className = 'dist-btn py-1.5 rounded-lg text-xs font-mono bg-amber-500/20 border border-amber-500 text-amber-300 font-bold';
-            });
-        });
+    // Test Modu Aç/Kapat
+    document.getElementById('btn-toggle-sim').addEventListener('click', () => {
+      state.simMode = !state.simMode;
+      const panel = document.getElementById('sim-panel');
+      if (state.simMode) {
+        panel.classList.remove('hidden');
+        document.getElementById('settings-panel').classList.add('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+      updateGPSUI();
+    });
 
-        document.getElementById('layerAxisCheck').addEventListener('change', (e) => state.layers.axis = e.target.checked);
-        document.getElementById('layerEasementCheck').addEventListener('change', (e) => state.layers.easement = e.target.checked);
-        document.getElementById('layerPointsCheck').addEventListener('change', (e) => state.layers.points = e.target.checked);
+    // Hatta Işınlan
+    document.getElementById('btn-teleport').addEventListener('click', () => {
+      const firstLine = state.features.find(f => f.type === 'line' && f.points.length > 0);
+      if (firstLine) {
+        state.userLat = firstLine.points[0].lat;
+        state.userLon = firstLine.points[0].lon;
+        state.simMode = true;
+        updateGPSUI();
+      }
+    });
 
-        document.getElementById('recalibrateSensorsBtn').addEventListener('click', () => {
-            requestOrientationPermission();
-            document.getElementById('settingsModal').classList.add('hidden');
-        });
+    function nudgeSimPosition(dNorthMeters, dEastMeters) {
+      if (state.userLat === null) return;
+      state.userLat += dNorthMeters / 111320;
+      state.userLon += dEastMeters / (111320 * Math.cos(state.userLat * Math.PI / 180));
+      updateGPSUI();
+    }
 
-        document.getElementById('jumpToNearestBtn').addEventListener('click', () => {
-            enableSimMode(true);
-            jumpToRouteCenter();
-            document.getElementById('settingsModal').classList.add('hidden');
-        });
+    document.getElementById('sim-heading-slider').addEventListener('input', (e) => {
+      state.simHeading = parseInt(e.target.value, 10);
+      document.getElementById('sim-heading-val').textContent = `${state.simHeading}°`;
+    });
 
-        document.getElementById('closeDetailBtn').addEventListener('click', () => {
-            document.getElementById('featureDetailModal').classList.add('hidden');
-        });
+    // Ayarlar Paneli
+    document.getElementById('btn-toggle-settings').addEventListener('click', () => {
+      const panel = document.getElementById('settings-panel');
+      panel.classList.toggle('hidden');
+      document.getElementById('sim-panel').classList.add('hidden');
+    });
 
-        // Başlangıç
-        window.addEventListener('load', () => {
-            resizeCanvases();
-            requestAnimationFrame(renderLoop);
-        });
-    </script>
+    document.getElementById('btn-close-settings').addEventListener('click', () => {
+      document.getElementById('settings-panel').classList.add('hidden');
+    });
+
+    document.getElementById('heading-offset-slider').addEventListener('input', (e) => {
+      state.headingOffset = parseInt(e.target.value, 10);
+      document.getElementById('offset-val').textContent = `${state.headingOffset}°`;
+    });
+
+    document.getElementById('eye-height-slider').addEventListener('input', (e) => {
+      state.eyeHeight = parseFloat(e.target.value);
+      document.getElementById('height-val').textContent = `${state.eyeHeight.toFixed(1)} m`;
+    });
+
+    document.getElementById('max-range-slider').addEventListener('input', (e) => {
+      state.maxRange = parseInt(e.target.value, 10);
+      document.getElementById('range-val').textContent = `${state.maxRange} m`;
+      document.getElementById('radar-range-label').textContent = `${state.maxRange} m`;
+    });
+  </script>
 </body>
 </html>
