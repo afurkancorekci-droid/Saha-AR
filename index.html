@@ -10,13 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #0b0f19;
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+      background-color: #0b0f19 !important;
       font-family: 'Inter', sans-serif;
       color: #f8fafc;
       user-select: none;
@@ -25,30 +26,32 @@
     }
     .mono { font-family: 'JetBrains Mono', monospace; }
     #camera-video {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 1;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 1 !important;
     }
     #ar-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: none;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2 !important;
+      pointer-events: none !important;
     }
     .glass {
-      background: rgba(15, 23, 42, 0.78);
+      background: rgba(15, 23, 42, 0.80);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
     input[type="range"] {
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.2);
       height: 6px;
       border-radius: 999px;
     }
@@ -65,10 +68,10 @@
 </head>
 <body>
 
-  <!-- Canlı Kamera Görüntüsü -->
+  <!-- Tam Ekran Canlı Kamera -->
   <video id="camera-video" autoplay playsinline muted></video>
   
-  <!-- AR Çizim Katmanı -->
+  <!-- Tam Ekran AR Çizim Katmanı -->
   <canvas id="ar-canvas"></canvas>
 
   <!-- GİRİŞ / DOSYA SEÇİM EKRANI -->
@@ -103,8 +106,8 @@
       </button>
 
       <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-        <span>iOS Safari & Android Chrome Uyumlu</span>
-        <span class="mono text-amber-400/90">v2.1 iOS-Compass</span>
+        <span>Tam Ekran AR & Segment Çizimi</span>
+        <span class="mono text-amber-400/90">v2.2 Field-Pro</span>
       </div>
     </div>
   </div>
@@ -131,26 +134,22 @@
         </div>
       </div>
 
-      <!-- DURUM VE İZİN BUTONLARI SATIRI -->
-      <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10">
-        <!-- GPS Hassasiyet -->
+      <!-- DURUM VE İZİN BUTONLARI -->
+      <div class="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-white/10">
         <div class="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
           <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span id="gps-accuracy" class="mono text-[11px] font-semibold text-slate-200">-- m</span>
         </div>
 
-        <!-- Pusula Derecesi -->
         <div class="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
           <span class="text-cyan-400 text-xs">🧭</span>
           <span id="compass-readout" class="mono text-[11px] font-bold text-cyan-300">000° K</span>
         </div>
 
-        <!-- iOS PUSULA AKTİFLEŞTİR BUTONU -->
         <button id="btn-activate-compass" class="flex items-center gap-1 bg-orange-500 hover:bg-orange-400 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-bold shadow-md shadow-orange-500/30 transition animate-pulse">
           <span>Pusulayı Aktifleştir</span>
         </button>
 
-        <!-- Yeni KMZ Yükle -->
         <label class="ml-auto flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition">
           <span>KMZ Aç</span>
           <input type="file" id="kmz-input-hud" accept=".kmz,.kml" class="hidden">
@@ -159,8 +158,8 @@
     </div>
 
     <!-- ORTA HEDEF ARTISI -->
-    <div class="self-center flex flex-col items-center opacity-60">
-      <div class="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center">
+    <div class="self-center flex flex-col items-center opacity-50">
+      <div class="w-7 h-7 rounded-full border border-white/60 flex items-center justify-center">
         <div class="w-1 h-1 rounded-full bg-amber-400"></div>
       </div>
     </div>
@@ -168,7 +167,7 @@
     <!-- ALT PANEL: RADAR + KONTROLLER -->
     <div class="pointer-events-auto max-w-lg w-full mx-auto flex flex-col gap-2.5">
       
-      <!-- SİMÜLASYON / TEST PANELİ (Varsayılan Gizli) -->
+      <!-- SİMÜLASYON / TEST PANELİ -->
       <div id="sim-panel" class="hidden glass rounded-2xl p-3.5 border border-cyan-500/40">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-bold text-cyan-300">Saha Test Modu (Sanal Yön & Konum)</span>
@@ -193,7 +192,7 @@
         </div>
       </div>
 
-      <!-- AYARLAR PANELİ (Varsayılan Gizli) -->
+      <!-- AYARLAR PANELİ -->
       <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40">
         <div class="flex items-center justify-between mb-2.5">
           <span class="text-xs font-bold text-amber-300">Kalibrasyon & Görünüm Ayarları</span>
@@ -217,25 +216,27 @@
           <div>
             <div class="flex justify-between text-[11px] text-slate-300 mb-1">
               <span>Görüş Menzili</span>
-              <span id="range-val" class="mono text-amber-400">250 m</span>
+              <span id="range-val" class="mono text-amber-400">300 m</span>
             </div>
-            <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="250" class="w-full">
+            <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="300" class="w-full">
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-xs text-slate-200">KM Nokta Etiketlerini Göster</span>
+            <input type="checkbox" id="toggle-labels" checked class="w-4 h-4 accent-amber-500">
           </div>
         </div>
       </div>
 
       <!-- ALT BAR: RADAR + BUTONLAR -->
       <div class="flex items-end justify-between gap-2.5">
-        <!-- Mini Radar -->
         <div class="glass rounded-2xl p-2 flex flex-col items-center">
           <canvas id="radar-canvas" width="104" height="104" class="rounded-full bg-slate-950/90 border border-slate-700"></canvas>
           <div class="flex items-center justify-between w-full px-1 mt-1">
             <span class="text-[9px] font-bold tracking-wider text-slate-400">RADAR</span>
-            <span id="radar-range-label" class="mono text-[9px] text-cyan-400">250 m</span>
+            <span id="radar-range-label" class="mono text-[9px] text-cyan-400">300 m</span>
           </div>
         </div>
 
-        <!-- Sağ Butonlar -->
         <div class="flex gap-2">
           <button id="btn-toggle-sim" class="glass px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-200 hover:border-cyan-400/50 transition flex flex-col items-center gap-1">
             <span class="text-cyan-400 text-sm">🧭</span>
@@ -252,17 +253,17 @@
   </div>
 
   <script>
-    // --- UYGULAMA DURUMU ---
     const state = {
       features: [],
       userLat: null,
       userLon: null,
       gpsAccuracy: null,
       heading: 0,
-      pitch: 12, // Telefonun öne eğimi (derece, yataydan aşağı)
+      pitch: 14,
       headingOffset: 0,
       eyeHeight: 1.6,
-      maxRange: 250,
+      maxRange: 300,
+      showLabels: true,
       simMode: false,
       simHeading: 0,
       compassActive: false
@@ -274,29 +275,29 @@
     const radarCanvas = document.getElementById('radar-canvas');
     const radarCtx = radarCanvas.getContext('2d');
 
-    // --- EKRAN BOYUTLANDIRMA ---
     function resizeCanvas() {
-      arCanvas.width = window.innerWidth * window.devicePixelRatio;
-      arCanvas.height = window.innerHeight * window.devicePixelRatio;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      arCanvas.width = w * window.devicePixelRatio;
+      arCanvas.height = h * window.devicePixelRatio;
       arCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- KAMERA BAŞLATMA ---
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: { facingMode: { ideal: 'environment' } },
           audio: false
         });
         video.srcObject = stream;
+        await video.play();
       } catch (err) {
         console.warn('Kamera açılamadı:', err);
       }
     }
 
-    // --- GPS KONUM TAKİBİ ---
     function startGPS() {
       if (!('geolocation' in navigator)) return;
       navigator.geolocation.watchPosition(
@@ -307,7 +308,7 @@
           state.gpsAccuracy = pos.coords.accuracy;
           updateGPSUI();
         },
-        (err) => {
+        () => {
           document.getElementById('gps-coords').textContent = 'GPS Hatası: Konum iznini kontrol edin';
         },
         { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
@@ -334,16 +335,11 @@
       }
     }
 
-    // --- iOS & ANDROID PUSULA / YÖNELİM SENSÖRÜ ---
     function onOrientationEvent(e) {
       let compass = null;
-
-      // 1. iOS Safari özel pusula açısı
       if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
         compass = e.webkitCompassHeading;
-      } 
-      // 2. Android / Standart cihazlar
-      else if (e.alpha !== null) {
+      } else if (e.alpha !== null) {
         compass = (360 - e.alpha) % 360;
       }
 
@@ -351,16 +347,11 @@
         state.heading = compass;
         state.compassActive = true;
         const btn = document.getElementById('btn-activate-compass');
-        if (btn && btn.style.display !== 'none') {
-          btn.style.display = 'none';
-        }
+        if (btn && btn.style.display !== 'none') btn.style.display = 'none';
       }
 
-      // Telefonun dikey eğimi (beta: 90 derece dik tutuş, 0 derece yere paralel)
       if (typeof e.beta === 'number' && !isNaN(e.beta)) {
-        // Telefon dik tutulduğunda (beta ~ 75-85) ufuk çizgisi ortada olur
-        const tiltDown = Math.max(-45, Math.min(75, 90 - e.beta));
-        state.pitch = tiltDown;
+        state.pitch = Math.max(-45, Math.min(75, 90 - e.beta));
       }
     }
 
@@ -371,27 +362,22 @@
           if (permission === 'granted') {
             window.addEventListener('deviceorientation', onOrientationEvent, true);
             const btn = document.getElementById('btn-activate-compass');
-            btn.textContent = 'Pusula Aktif ✓';
-            btn.classList.remove('bg-orange-500', 'animate-pulse');
-            btn.classList.add('bg-emerald-600');
-            setTimeout(() => { btn.style.display = 'none'; }, 1500);
+            btn.style.display = 'none';
           } else {
-            alert('Hareket ve Yön izni reddedildi. iPhone Ayarlar > Safari > Web Sitesi Verileri kısmından site verisini silip tekrar deneyin.');
+            alert('Hareket ve Yön izni reddedildi. Safari ayarlarından izin verin.');
           }
         } catch (err) {
-          alert('Sensör izni alınamadı: ' + err.message);
+          alert('Sensör hatası: ' + err.message);
         }
       } else {
         window.addEventListener('deviceorientationabsolute', onOrientationEvent, true);
         window.addEventListener('deviceorientation', onOrientationEvent, true);
-        const btn = document.getElementById('btn-activate-compass');
-        btn.style.display = 'none';
+        document.getElementById('btn-activate-compass').style.display = 'none';
       }
     }
 
     document.getElementById('btn-activate-compass').addEventListener('click', requestIOSCompass);
 
-    // --- KMZ / KML DOSYA OKUMA VE AYRIŞTIRMA ---
     async function handleFileUpload(file) {
       if (!file) return;
       document.getElementById('file-title').textContent = file.name.replace(/\.(kmz|kml)$/i, '');
@@ -401,7 +387,7 @@
         const zip = await JSZip.loadAsync(file);
         const kmlFile = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'));
         if (!kmlFile) {
-          alert('KMZ arşivi içinde KML dosyası bulunamadı.');
+          alert('KMZ içinde KML dosyası bulunamadı.');
           return;
         }
         kmlText = await kmlFile.async('string');
@@ -424,7 +410,9 @@
         const pm = placemarks[i];
         const nameEl = pm.getElementsByTagName('name')[0];
         const name = nameEl ? nameEl.textContent.trim() : `Hat ${i + 1}`;
-        const isAxis = /aks|boru|center|line|hat/i.test(name) && !/irtifak|sınır|koridor|kamulaştırma/i.test(name);
+        // İrtifak / sınır kelimesi geçmiyorsa Boru Aksı olarak turuncu çiz
+        const isBoundary = /irtifak|sınır|koridor|kamulaştırma|sağ|sol/i.test(name);
+        const isAxis = !isBoundary;
 
         const lineStrings = pm.getElementsByTagName('LineString');
         for (let j = 0; j < lineStrings.length; j++) {
@@ -479,15 +467,15 @@
       }).filter(Boolean);
     }
 
-    // --- JEODEZİK HESAPLAMALAR (METRE CİNSİNDEN YEREL DÜZLEM) ---
     function toLocalMeters(lat, lon) {
       const R = 6378137;
       const dLat = (lat - state.userLat) * Math.PI / 180;
       const dLon = (lon - state.userLon) * Math.PI / 180;
       const meanLat = ((lat + state.userLat) / 2) * Math.PI / 180;
-      const north = dLat * R;
-      const east = dLon * R * Math.cos(meanLat);
-      return { east, north };
+      return {
+        north: dLat * R,
+        east: dLon * R * Math.cos(meanLat)
+      };
     }
 
     function getEffectiveHeading() {
@@ -495,14 +483,15 @@
       return (base + state.headingOffset + 360) % 360;
     }
 
-    // --- AR KAMERA PROJEKSİYONU VE ÇİZİM DÖNGÜSÜ ---
     function renderLoop() {
       const w = window.innerWidth;
       const h = window.innerHeight;
       arCtx.clearRect(0, 0, w, h);
 
       const heading = getEffectiveHeading();
-      updateCompassUI(heading);
+      const dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
+      const dir = dirs[Math.round(heading / 45) % 8];
+      document.getElementById('compass-readout').textContent = `${String(Math.round(heading)).padStart(3, '0')}° ${dir}`;
 
       if (state.userLat !== null && state.features.length > 0) {
         drawAROverlays(w, h, heading);
@@ -512,119 +501,171 @@
       requestAnimationFrame(renderLoop);
     }
 
-    function updateCompassUI(deg) {
-      const dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
-      const dir = dirs[Math.round(deg / 45) % 8];
-      document.getElementById('compass-readout').textContent =
-        `${String(Math.round(deg)).padStart(3, '0')}° ${dir}`;
-    }
-
-    function projectPoint(east, north, headingDeg, w, h) {
+    // Kameranın arkasındaki segmentleri ön düzleme kırpan (Near-Plane Clipping) projeksiyon
+    function drawSegment3D(m1, m2, headingDeg, w, h, isAxis) {
       const rad = headingDeg * Math.PI / 180;
-      // Kamera eksenine göre ileri (z) ve sağ/sol (x) mesafesi
-      const forward = north * Math.cos(rad) + east * Math.sin(rad);
-      const right = east * Math.cos(rad) - north * Math.sin(rad);
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
 
-      if (forward <= 0.8) return null; // Kameranın arkasında
+      let f1 = m1.north * cosR + m1.east * sinR;
+      let r1 = m1.east * cosR - m1.north * sinR;
 
-      const fovH = 62 * Math.PI / 180; // Yatay görüş açısı
+      let f2 = m2.north * cosR + m2.east * sinR;
+      let r2 = m2.east * cosR - m2.north * sinR;
+
+      const near = 1.2; // Kameradan 1.2m önü
+      if (f1 < near && f2 < near) return; // İkisi de arkadaysa çizme
+
+      // Biri arkada biri öndeyse tam ön sınırda kes (böylece yanından geçen hat kopmaz!)
+      if (f1 < near) {
+        const t = (near - f1) / (f2 - f1);
+        r1 = r1 + t * (r2 - r1);
+        f1 = near;
+      } else if (f2 < near) {
+        const t = (near - f2) / (f1 - f2);
+        r2 = r2 + t * (r1 - r2);
+        f2 = near;
+      }
+
+      const fovH = 62 * Math.PI / 180;
       const focal = (w / 2) / Math.tan(fovH / 2);
-
-      // Eğim (pitch) hesabı
       const pitchRad = state.pitch * Math.PI / 180;
-      const yWorld = -state.eyeHeight; // Zemin seviyesi
+      const yWorld = -state.eyeHeight;
 
-      const zCam = forward * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
-      const yCam = forward * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+      const z1 = f1 * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
+      const y1 = f1 * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
 
-      if (zCam <= 0.5) return null;
+      const z2 = f2 * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
+      const y2 = f2 * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
 
-      const screenX = (w / 2) + (right / zCam) * focal;
-      const screenY = (h / 2) - (yCam / zCam) * focal;
+      if (z1 <= 0.3 || z2 <= 0.3) return;
 
-      return { x: screenX, y: screenY, dist: Math.hypot(east, north) };
+      const sx1 = (w / 2) + (r1 / z1) * focal;
+      const sy1 = (h / 2) - (y1 / z1) * focal;
+
+      const sx2 = (w / 2) + (r2 / z2) * focal;
+      const sy2 = (h / 2) - (y2 / z2) * focal;
+
+      arCtx.beginPath();
+      arCtx.moveTo(sx1, sy1);
+      arCtx.lineTo(sx2, sy2);
+      arCtx.stroke();
     }
 
     function drawAROverlays(w, h, heading) {
+      const pointLabels = [];
+
       state.features.forEach(feat => {
         if (feat.type === 'line') {
-          const projected = [];
-          for (let i = 0; i < feat.points.length; i++) {
-            const m = toLocalMeters(feat.points[i].lat, feat.points[i].lon);
-            const dist = Math.hypot(m.east, m.north);
-            if (dist > state.maxRange) {
-              projected.push(null);
-              continue;
-            }
-            projected.push(projectPoint(m.east, m.north, heading, w, h));
-          }
-
           arCtx.save();
-          arCtx.beginPath();
-          let drawing = false;
-          for (let i = 0; i < projected.length; i++) {
-            const p = projected[i];
-            if (!p) {
-              drawing = false;
-              continue;
-            }
-            if (!drawing) {
-              arCtx.moveTo(p.x, p.y);
-              drawing = true;
-            } else {
-              arCtx.lineTo(p.x, p.y);
-            }
-          }
-
           if (feat.isAxis) {
             arCtx.strokeStyle = '#f59e0b'; // Turuncu Boru Aksı
-            arCtx.lineWidth = 6;
+            arCtx.lineWidth = 7;
             arCtx.setLineDash([]);
+            arCtx.shadowColor = 'rgba(0,0,0,0.7)';
+            arCtx.shadowBlur = 6;
           } else {
             arCtx.strokeStyle = '#22d3ee'; // Camgöbeği İrtifak Sınırı
-            arCtx.lineWidth = 4;
-            arCtx.setLineDash([12, 8]);
+            arCtx.lineWidth = 4.5;
+            arCtx.setLineDash([14, 10]);
           }
           arCtx.lineCap = 'round';
-          arCtx.lineJoin = 'round';
-          arCtx.stroke();
 
-          // Köşe kırık noktaları
-          arCtx.setLineDash([]);
-          projected.forEach((p, idx) => {
-            if (p && idx % 2 === 0 && p.x > 0 && p.x < w && p.y > 0 && p.y < h) {
-              arCtx.fillStyle = feat.isAxis ? '#fef08a' : '#cffafe';
-              arCtx.beginPath();
-              arCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-              arCtx.fill();
+          for (let i = 0; i < feat.points.length - 1; i++) {
+            const m1 = toLocalMeters(feat.points[i].lat, feat.points[i].lon);
+            const m2 = toLocalMeters(feat.points[i + 1].lat, feat.points[i + 1].lon);
+
+            // Segment kullanıcı menziline yakınsa çiz (uzun düz hatlar kaçırılmaz)
+            const d1 = Math.hypot(m1.east, m1.north);
+            const d2 = Math.hypot(m2.east, m2.north);
+            const segLen = Math.hypot(m2.east - m1.east, m2.north - m1.north);
+
+            if (d1 > state.maxRange && d2 > state.maxRange && segLen < state.maxRange) continue;
+
+            // Uzun segmentleri perspektif bozulmaması için 10 metrelik alt parçalara böl
+            const steps = Math.max(1, Math.min(40, Math.ceil(segLen / 10)));
+            for (let s = 0; s < steps; s++) {
+              const t1 = s / steps;
+              const t2 = (s + 1) / steps;
+              const sub1 = {
+                east: m1.east + (m2.east - m1.east) * t1,
+                north: m1.north + (m2.north - m1.north) * t1
+              };
+              const sub2 = {
+                east: m1.east + (m2.east - m1.east) * t2,
+                north: m1.north + (m2.north - m1.north) * t2
+              };
+              if (Math.hypot(sub1.east, sub1.north) <= state.maxRange || Math.hypot(sub2.east, sub2.north) <= state.maxRange) {
+                drawSegment3D(sub1, sub2, heading, w, h, feat.isAxis);
+              }
             }
-          });
+          }
           arCtx.restore();
-        } else if (feat.type === 'point') {
+        } else if (feat.type === 'point' && state.showLabels) {
           const m = toLocalMeters(feat.point.lat, feat.point.lon);
           const dist = Math.hypot(m.east, m.north);
           if (dist <= state.maxRange) {
-            const p = projectPoint(m.east, m.north, heading, w, h);
-            if (p && p.x > 20 && p.x < w - 20 && p.y > 40 && p.y < h - 40) {
-              arCtx.save();
-              arCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-              arCtx.strokeStyle = '#f59e0b';
-              arCtx.lineWidth = 1.5;
-              const label = `${feat.name} (${Math.round(dist)}m)`;
-              arCtx.font = 'bold 11px Inter, sans-serif';
-              const tw = arCtx.measureText(label).width + 14;
-              arCtx.beginPath();
-              arCtx.roundRect(p.x - tw / 2, p.y - 34, tw, 22, 8);
-              arCtx.fill();
-              arCtx.stroke();
-
-              arCtx.fillStyle = '#fff';
-              arCtx.textAlign = 'center';
-              arCtx.fillText(label, p.x, p.y - 19);
-              arCtx.restore();
+            const rad = heading * Math.PI / 180;
+            const forward = m.north * Math.cos(rad) + m.east * Math.sin(rad);
+            const right = m.east * Math.cos(rad) - m.north * Math.sin(rad);
+            if (forward > 1.5) {
+              const fovH = 62 * Math.PI / 180;
+              const focal = (w / 2) / Math.tan(fovH / 2);
+              const pitchRad = state.pitch * Math.PI / 180;
+              const yWorld = -state.eyeHeight;
+              const zCam = forward * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
+              const yCam = forward * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+              if (zCam > 0.5) {
+                const sx = (w / 2) + (right / zCam) * focal;
+                const sy = (h / 2) - (yCam / zCam) * focal;
+                if (sx > 20 && sx < w - 20 && sy > 60 && sy < h - 80) {
+                  pointLabels.push({ name: feat.name, dist, sx, sy });
+                }
+              }
             }
           }
         }
+      });
+
+      // Yakından uzağa sırala ve üst üste binen etiketleri hafifçe kaydır
+      pointLabels.sort((a, b) => a.dist - b.dist);
+      const placedBoxes = [];
+      pointLabels.slice(0, 12).forEach(lbl => {
+        const text = `${lbl.name} (${Math.round(lbl.dist)}m)`;
+        arCtx.font = 'bold 11px Inter, sans-serif';
+        const tw = arCtx.measureText(text).width + 14;
+        const th = 22;
+        let bx = lbl.sx - tw / 2;
+        let by = lbl.sy - 32;
+
+        // Çakışma varsa yukarı kaydır
+        for (const box of placedBoxes) {
+          if (Math.abs(bx - box.x) < (tw + box.w) / 2 && Math.abs(by - box.y) < th + 4) {
+            by = box.y - th - 5;
+          }
+        }
+        placedBoxes.push({ x: bx, y: by, w: tw, h: th });
+
+        arCtx.save();
+        arCtx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        arCtx.strokeStyle = '#f59e0b';
+        arCtx.lineWidth = 1.5;
+        arCtx.beginPath();
+        arCtx.roundRect(bx, by, tw, th, 8);
+        arCtx.fill();
+        arCtx.stroke();
+
+        // Zemine inen ince işaret çizgisi
+        arCtx.beginPath();
+        arCtx.moveTo(lbl.sx, by + th);
+        arCtx.lineTo(lbl.sx, lbl.sy);
+        arCtx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+        arCtx.stroke();
+
+        arCtx.fillStyle = '#fff';
+        arCtx.textAlign = 'center';
+        arCtx.fillText(text, bx + tw / 2, by + 15);
+        arCtx.restore();
       });
     }
 
@@ -635,7 +676,6 @@
       const r = size / 2 - 4;
       radarCtx.clearRect(0, 0, size, size);
 
-      // Halkalar
       radarCtx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
       radarCtx.lineWidth = 1;
       [0.33, 0.66, 1].forEach(scale => {
@@ -644,15 +684,13 @@
         radarCtx.stroke();
       });
 
-      // Bakış açısı konisi (her zaman yukarı bakar)
-      radarCtx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      radarCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
       radarCtx.beginPath();
       radarCtx.moveTo(cx, cy);
       radarCtx.arc(cx, cy, r, -Math.PI / 2 - 0.52, -Math.PI / 2 + 0.52);
       radarCtx.closePath();
       radarCtx.fill();
 
-      // Hatları radara çiz (kullanıcı yönüne göre döndürülmüş)
       const rad = heading * Math.PI / 180;
       state.features.forEach(feat => {
         if (feat.type !== 'line') return;
@@ -676,20 +714,18 @@
         radarCtx.stroke();
       });
 
-      // Merkez kullanıcı noktası
       radarCtx.fillStyle = '#fff';
       radarCtx.beginPath();
       radarCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
       radarCtx.fill();
     }
 
-    // --- KULLANICI ETKİLEŞİMLERİ VE BUTONLAR ---
     function enterARMode() {
       document.getElementById('landing-screen').classList.add('hidden');
       document.getElementById('ar-hud').classList.remove('hidden');
+      resizeCanvas();
       startCamera();
       startGPS();
-      // Android veya izin gerektirmeyen tarayıcılar için otomatik dinleme başlat
       window.addEventListener('deviceorientationabsolute', onOrientationEvent, true);
       window.addEventListener('deviceorientation', onOrientationEvent, true);
       requestAnimationFrame(renderLoop);
@@ -703,22 +739,20 @@
       if (e.target.files[0]) handleFileUpload(e.target.files[0]);
     });
 
-    // Demo / Örnek Hat Başlatma
     document.getElementById('btn-demo-start').addEventListener('click', () => {
-      const baseLat = 36.687200;
-      const baseLon = 34.325860;
+      const baseLat = 36.687374;
+      const baseLon = 34.325522;
       state.userLat = baseLat;
       state.userLon = baseLon;
       state.simMode = true;
       state.features = [
         {
           type: 'line',
-          name: 'Örnek Boru Aksı (40" DGBH)',
+          name: 'Boru Aksı (40" DGBH)',
           isAxis: true,
           points: [
             { lat: baseLat - 0.0005, lon: baseLon },
-            { lat: baseLat + 0.0003, lon: baseLon + 0.0001 },
-            { lat: baseLat + 0.0012, lon: baseLon + 0.0004 }
+            { lat: baseLat + 0.0015, lon: baseLon + 0.0003 }
           ]
         },
         {
@@ -726,9 +760,8 @@
           name: 'Sağ İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon + 0.00012 },
-            { lat: baseLat + 0.0003, lon: baseLon + 0.00022 },
-            { lat: baseLat + 0.0012, lon: baseLon + 0.00052 }
+            { lat: baseLat - 0.0005, lon: baseLon + 0.00014 },
+            { lat: baseLat + 0.0015, lon: baseLon + 0.00044 }
           ]
         },
         {
@@ -736,20 +769,18 @@
           name: 'Sol İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon - 0.00012 },
-            { lat: baseLat + 0.0003, lon: baseLon - 0.00002 },
-            { lat: baseLat + 0.0012, lon: baseLon + 0.00028 }
+            { lat: baseLat - 0.0005, lon: baseLon - 0.00014 },
+            { lat: baseLat + 0.0015, lon: baseLon + 0.00016 }
           ]
         }
       ];
       document.getElementById('file-title').textContent = 'Örnek DGBH Simülasyonu';
-      document.getElementById('stats-badge').textContent = '3 Hat • 9 Nokta';
+      document.getElementById('stats-badge').textContent = '3 Hat • 6 Nokta';
       document.getElementById('sim-panel').classList.remove('hidden');
       updateGPSUI();
       enterARMode();
     });
 
-    // Test Modu Aç/Kapat
     document.getElementById('btn-toggle-sim').addEventListener('click', () => {
       state.simMode = !state.simMode;
       const panel = document.getElementById('sim-panel');
@@ -762,7 +793,6 @@
       updateGPSUI();
     });
 
-    // Hatta Işınlan
     document.getElementById('btn-teleport').addEventListener('click', () => {
       const firstLine = state.features.find(f => f.type === 'line' && f.points.length > 0);
       if (firstLine) {
@@ -785,7 +815,6 @@
       document.getElementById('sim-heading-val').textContent = `${state.simHeading}°`;
     });
 
-    // Ayarlar Paneli
     document.getElementById('btn-toggle-settings').addEventListener('click', () => {
       const panel = document.getElementById('settings-panel');
       panel.classList.toggle('hidden');
@@ -810,6 +839,10 @@
       state.maxRange = parseInt(e.target.value, 10);
       document.getElementById('range-val').textContent = `${state.maxRange} m`;
       document.getElementById('radar-range-label').textContent = `${state.maxRange} m`;
+    });
+
+    document.getElementById('toggle-labels').addEventListener('change', (e) => {
+      state.showLabels = e.target.checked;
     });
   </script>
 </body>
