@@ -44,21 +44,21 @@
       pointer-events: none !important;
     }
     .glass {
-      background: rgba(15, 23, 42, 0.80);
+      background: rgba(15, 23, 42, 0.82);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
     input[type="range"] {
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.22);
       height: 6px;
       border-radius: 999px;
     }
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: #f59e0b;
       cursor: pointer;
@@ -90,7 +90,7 @@
       </div>
 
       <p class="text-sm text-slate-300 leading-relaxed mb-6">
-        Sahadaki boru aksını ve irtifak sınırlarını telefon kamerası üzerinde gerçek zamanlı görmek için <strong>.kmz</strong> veya <strong>.kml</strong> dosyanızı seçin.
+        Sahadaki boru aksını ve irtifak sınırlarını arazi eğimi ve kot farkı desteğiyle telefon kamerasında görmek için <strong>.kmz</strong> veya <strong>.kml</strong> dosyanızı seçin.
       </p>
 
       <label class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-bold py-4 px-5 rounded-2xl cursor-pointer transition shadow-lg shadow-amber-500/25 mb-3">
@@ -106,8 +106,8 @@
       </button>
 
       <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-        <span>Tam Ekran AR & Segment Çizimi</span>
-        <span class="mono text-amber-400/90">v2.2 Field-Pro</span>
+        <span>Arazi Eğimi & 3D Zemin Hizalama</span>
+        <span class="mono text-amber-400/90">v2.3 Slope-AR</span>
       </div>
     </div>
   </div>
@@ -192,13 +192,36 @@
         </div>
       </div>
 
-      <!-- AYARLAR PANELİ -->
-      <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40">
+      <!-- ZEMİN HİZALAMA & KALİBRASYON PANELİ -->
+      <div id="settings-panel" class="hidden glass rounded-2xl p-3.5 border border-amber-500/40 max-h-[60vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-2.5">
-          <span class="text-xs font-bold text-amber-300">Kalibrasyon & Görünüm Ayarları</span>
-          <button id="btn-close-settings" class="text-xs text-slate-400 hover:text-white px-2">Kapat ✕</button>
+          <span class="text-xs font-bold text-amber-300">Zemin Hizalama & Kalibrasyon</span>
+          <div class="flex items-center gap-2">
+            <button id="btn-reset-settings" class="text-[11px] text-cyan-300 hover:underline">Sıfırla</button>
+            <button id="btn-close-settings" class="text-xs text-slate-400 hover:text-white px-2">Kapat ✕</button>
+          </div>
         </div>
         <div class="space-y-3">
+          <!-- ARAZİ EĞİMİ (YENİ) -->
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-amber-500/25">
+            <div class="flex justify-between text-[11px] text-amber-200 font-semibold mb-1">
+              <span>Arazi Eğimi (- İniş / + Yokuş)</span>
+              <span id="slope-val" class="mono text-amber-400">-2.0°</span>
+            </div>
+            <input type="range" id="ground-slope-slider" min="-25" max="25" step="0.5" value="-2" class="w-full">
+            <p class="text-[10px] text-slate-400 mt-1">Vadiye/inişe bakarken çizgi havada kalıyorsa sola (-), yokuş yukarı bakarken yere gömülüyorsa sağa (+) kaydırın.</p>
+          </div>
+
+          <!-- GÖZ YÜKSEKLİĞİ (30m'ye çıkarıldı) -->
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Göz / Tepe Kot Farkı</span>
+              <span id="height-val" class="mono text-amber-400">2.0 m</span>
+            </div>
+            <input type="range" id="eye-height-slider" min="0.5" max="30.0" step="0.5" value="2.0" class="w-full">
+          </div>
+
+          <!-- PUSULA SAPMASI -->
           <div>
             <div class="flex justify-between text-[11px] text-slate-300 mb-1">
               <span>Pusula Sapma Kalibrasyonu</span>
@@ -206,23 +229,24 @@
             </div>
             <input type="range" id="heading-offset-slider" min="-180" max="180" value="0" class="w-full">
           </div>
-          <div>
-            <div class="flex justify-between text-[11px] text-slate-300 mb-1">
-              <span>Göz Yüksekliği (Zemin Derinliği)</span>
-              <span id="height-val" class="mono text-amber-400">1.6 m</span>
-            </div>
-            <input type="range" id="eye-height-slider" min="0.5" max="5.0" step="0.1" value="1.6" class="w-full">
-          </div>
+
+          <!-- GÖRÜŞ MENZİLİ -->
           <div>
             <div class="flex justify-between text-[11px] text-slate-300 mb-1">
               <span>Görüş Menzili</span>
-              <span id="range-val" class="mono text-amber-400">300 m</span>
+              <span id="range-val" class="mono text-amber-400">350 m</span>
             </div>
-            <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="300" class="w-full">
+            <input type="range" id="max-range-slider" min="50" max="1000" step="50" value="350" class="w-full">
           </div>
-          <div class="flex items-center justify-between pt-1">
+
+          <!-- KM ETİKETLERİ & Z-KOTU -->
+          <div class="flex items-center justify-between pt-1 border-t border-white/10">
             <span class="text-xs text-slate-200">KM Nokta Etiketlerini Göster</span>
             <input type="checkbox" id="toggle-labels" checked class="w-4 h-4 accent-amber-500">
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-200">KMZ İçi Kot (Z) Verisini Kullan</span>
+            <input type="checkbox" id="toggle-elevation" checked class="w-4 h-4 accent-amber-500">
           </div>
         </div>
       </div>
@@ -233,7 +257,7 @@
           <canvas id="radar-canvas" width="104" height="104" class="rounded-full bg-slate-950/90 border border-slate-700"></canvas>
           <div class="flex items-center justify-between w-full px-1 mt-1">
             <span class="text-[9px] font-bold tracking-wider text-slate-400">RADAR</span>
-            <span id="radar-range-label" class="mono text-[9px] text-cyan-400">300 m</span>
+            <span id="radar-range-label" class="mono text-[9px] text-cyan-400">350 m</span>
           </div>
         </div>
 
@@ -244,7 +268,7 @@
           </button>
           <button id="btn-toggle-settings" class="glass px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-200 hover:border-amber-400/50 transition flex flex-col items-center gap-1">
             <span class="text-amber-400 text-sm">⚙️</span>
-            <span>Ayarlar</span>
+            <span>Zemin / Ayar</span>
           </button>
         </div>
       </div>
@@ -257,13 +281,17 @@
       features: [],
       userLat: null,
       userLon: null,
+      userAlt: null,
       gpsAccuracy: null,
       heading: 0,
       pitch: 14,
       headingOffset: 0,
-      eyeHeight: 1.6,
-      maxRange: 300,
+      eyeHeight: 2.0,
+      groundSlope: -2.0, // Varsayılan hafif iniş telafisi (derece)
+      maxRange: 350,
       showLabels: true,
+      useElevation: true,
+      hasKMZElevation: false,
       simMode: false,
       simHeading: 0,
       compassActive: false
@@ -305,6 +333,9 @@
           if (state.simMode) return;
           state.userLat = pos.coords.latitude;
           state.userLon = pos.coords.longitude;
+          if (typeof pos.coords.altitude === 'number' && !isNaN(pos.coords.altitude)) {
+            state.userAlt = pos.coords.altitude;
+          }
           state.gpsAccuracy = pos.coords.accuracy;
           updateGPSUI();
         },
@@ -351,7 +382,8 @@
       }
 
       if (typeof e.beta === 'number' && !isNaN(e.beta)) {
-        state.pitch = Math.max(-45, Math.min(75, 90 - e.beta));
+        // Telefon dik tutulduğunda (beta=90) pitch=0, öne eğildiğinde (beta<90) pozitif pitch
+        state.pitch = Math.max(-50, Math.min(75, 90 - e.beta));
       }
     }
 
@@ -361,8 +393,7 @@
           const permission = await DeviceOrientationEvent.requestPermission();
           if (permission === 'granted') {
             window.addEventListener('deviceorientation', onOrientationEvent, true);
-            const btn = document.getElementById('btn-activate-compass');
-            btn.style.display = 'none';
+            document.getElementById('btn-activate-compass').style.display = 'none';
           } else {
             alert('Hareket ve Yön izni reddedildi. Safari ayarlarından izin verin.');
           }
@@ -405,12 +436,12 @@
       const placemarks = xml.getElementsByTagName('Placemark');
       const features = [];
       let totalPoints = 0;
+      let nonZeroElevCount = 0;
 
       for (let i = 0; i < placemarks.length; i++) {
         const pm = placemarks[i];
         const nameEl = pm.getElementsByTagName('name')[0];
         const name = nameEl ? nameEl.textContent.trim() : `Hat ${i + 1}`;
-        // İrtifak / sınır kelimesi geçmiyorsa Boru Aksı olarak turuncu çiz
         const isBoundary = /irtifak|sınır|koridor|kamulaştırma|sağ|sol/i.test(name);
         const isAxis = !isBoundary;
 
@@ -421,6 +452,7 @@
             const pts = parseCoordinates(coordsEl.textContent);
             if (pts.length > 1) {
               totalPoints += pts.length;
+              nonZeroElevCount += pts.filter(p => p.alt !== 0).length;
               features.push({ type: 'line', name, isAxis, points: pts });
             }
           }
@@ -452,6 +484,7 @@
       }
 
       state.features = features;
+      state.hasKMZElevation = nonZeroElevCount > 10;
       const lineCount = features.filter(f => f.type === 'line').length;
       document.getElementById('stats-badge').textContent = `${lineCount} Hat • ${totalPoints} Nokta`;
     }
@@ -462,20 +495,30 @@
         if (parts.length < 2) return null;
         const lon = parseFloat(parts[0]);
         const lat = parseFloat(parts[1]);
+        const alt = parts.length >= 3 ? parseFloat(parts[2]) : 0;
         if (isNaN(lat) || isNaN(lon)) return null;
-        return { lat, lon };
+        return { lat, lon, alt: isNaN(alt) ? 0 : alt };
       }).filter(Boolean);
     }
 
-    function toLocalMeters(lat, lon) {
+    function toLocalMeters(lat, lon, alt = 0) {
       const R = 6378137;
       const dLat = (lat - state.userLat) * Math.PI / 180;
       const dLon = (lon - state.userLon) * Math.PI / 180;
       const meanLat = ((lat + state.userLat) / 2) * Math.PI / 180;
-      return {
-        north: dLat * R,
-        east: dLon * R * Math.cos(meanLat)
-      };
+      const north = dLat * R;
+      const east = dLon * R * Math.cos(meanLat);
+      const dist = Math.hypot(east, north);
+
+      // Zemin yüksekliği hesabı: Göz yüksekliği + Arazi eğim rampası + (varsa KMZ kot farkı)
+      const slopeRad = state.groundSlope * Math.PI / 180;
+      let verticalOffset = -state.eyeHeight + Math.tan(slopeRad) * dist;
+
+      if (state.useElevation && state.hasKMZElevation && state.userAlt !== null && alt !== 0) {
+        verticalOffset += (alt - state.userAlt);
+      }
+
+      return { east, north, up: verticalOffset };
     }
 
     function getEffectiveHeading() {
@@ -501,42 +544,44 @@
       requestAnimationFrame(renderLoop);
     }
 
-    // Kameranın arkasındaki segmentleri ön düzleme kırpan (Near-Plane Clipping) projeksiyon
-    function drawSegment3D(m1, m2, headingDeg, w, h, isAxis) {
+    function drawSegment3D(m1, m2, headingDeg, w, h) {
       const rad = headingDeg * Math.PI / 180;
       const cosR = Math.cos(rad);
       const sinR = Math.sin(rad);
 
       let f1 = m1.north * cosR + m1.east * sinR;
       let r1 = m1.east * cosR - m1.north * sinR;
+      let u1 = m1.up;
 
       let f2 = m2.north * cosR + m2.east * sinR;
       let r2 = m2.east * cosR - m2.north * sinR;
+      let u2 = m2.up;
 
-      const near = 1.2; // Kameradan 1.2m önü
-      if (f1 < near && f2 < near) return; // İkisi de arkadaysa çizme
+      const near = 1.2;
+      if (f1 < near && f2 < near) return;
 
-      // Biri arkada biri öndeyse tam ön sınırda kes (böylece yanından geçen hat kopmaz!)
       if (f1 < near) {
         const t = (near - f1) / (f2 - f1);
         r1 = r1 + t * (r2 - r1);
+        u1 = u1 + t * (u2 - u1);
         f1 = near;
       } else if (f2 < near) {
         const t = (near - f2) / (f1 - f2);
         r2 = r2 + t * (r1 - r2);
+        u2 = u2 + t * (u1 - u2);
         f2 = near;
       }
 
-      const fovH = 62 * Math.PI / 180;
-      const focal = (w / 2) / Math.tan(fovH / 2);
+      // iPhone ana kamera dikey FOV ~ 68 derece
+      const fovV = 68 * Math.PI / 180;
+      const focal = (h / 2) / Math.tan(fovV / 2);
       const pitchRad = state.pitch * Math.PI / 180;
-      const yWorld = -state.eyeHeight;
 
-      const z1 = f1 * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
-      const y1 = f1 * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+      const z1 = f1 * Math.cos(pitchRad) - u1 * Math.sin(pitchRad);
+      const y1 = f1 * Math.sin(pitchRad) + u1 * Math.cos(pitchRad);
 
-      const z2 = f2 * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
-      const y2 = f2 * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+      const z2 = f2 * Math.cos(pitchRad) - u2 * Math.sin(pitchRad);
+      const y2 = f2 * Math.sin(pitchRad) + u2 * Math.cos(pitchRad);
 
       if (z1 <= 0.3 || z2 <= 0.3) return;
 
@@ -559,62 +604,63 @@
         if (feat.type === 'line') {
           arCtx.save();
           if (feat.isAxis) {
-            arCtx.strokeStyle = '#f59e0b'; // Turuncu Boru Aksı
+            arCtx.strokeStyle = '#f59e0b';
             arCtx.lineWidth = 7;
             arCtx.setLineDash([]);
-            arCtx.shadowColor = 'rgba(0,0,0,0.7)';
+            arCtx.shadowColor = 'rgba(0,0,0,0.75)';
             arCtx.shadowBlur = 6;
           } else {
-            arCtx.strokeStyle = '#22d3ee'; // Camgöbeği İrtifak Sınırı
+            arCtx.strokeStyle = '#22d3ee';
             arCtx.lineWidth = 4.5;
             arCtx.setLineDash([14, 10]);
           }
           arCtx.lineCap = 'round';
 
           for (let i = 0; i < feat.points.length - 1; i++) {
-            const m1 = toLocalMeters(feat.points[i].lat, feat.points[i].lon);
-            const m2 = toLocalMeters(feat.points[i + 1].lat, feat.points[i + 1].lon);
+            const p1 = feat.points[i];
+            const p2 = feat.points[i + 1];
+            const m1 = toLocalMeters(p1.lat, p1.lon, p1.alt);
+            const m2 = toLocalMeters(p2.lat, p2.lon, p2.alt);
 
-            // Segment kullanıcı menziline yakınsa çiz (uzun düz hatlar kaçırılmaz)
             const d1 = Math.hypot(m1.east, m1.north);
             const d2 = Math.hypot(m2.east, m2.north);
             const segLen = Math.hypot(m2.east - m1.east, m2.north - m1.north);
 
             if (d1 > state.maxRange && d2 > state.maxRange && segLen < state.maxRange) continue;
 
-            // Uzun segmentleri perspektif bozulmaması için 10 metrelik alt parçalara böl
             const steps = Math.max(1, Math.min(40, Math.ceil(segLen / 10)));
             for (let s = 0; s < steps; s++) {
               const t1 = s / steps;
               const t2 = (s + 1) / steps;
               const sub1 = {
                 east: m1.east + (m2.east - m1.east) * t1,
-                north: m1.north + (m2.north - m1.north) * t1
+                north: m1.north + (m2.north - m1.north) * t1,
+                up: m1.up + (m2.up - m1.up) * t1
               };
               const sub2 = {
                 east: m1.east + (m2.east - m1.east) * t2,
-                north: m1.north + (m2.north - m1.north) * t2
+                north: m1.north + (m2.north - m1.north) * t2,
+                up: m1.up + (m2.up - m1.up) * t2
               };
               if (Math.hypot(sub1.east, sub1.north) <= state.maxRange || Math.hypot(sub2.east, sub2.north) <= state.maxRange) {
-                drawSegment3D(sub1, sub2, heading, w, h, feat.isAxis);
+                drawSegment3D(sub1, sub2, heading, w, h);
               }
             }
           }
           arCtx.restore();
         } else if (feat.type === 'point' && state.showLabels) {
-          const m = toLocalMeters(feat.point.lat, feat.point.lon);
+          const m = toLocalMeters(feat.point.lat, feat.point.lon, feat.point.alt);
           const dist = Math.hypot(m.east, m.north);
           if (dist <= state.maxRange) {
             const rad = heading * Math.PI / 180;
             const forward = m.north * Math.cos(rad) + m.east * Math.sin(rad);
             const right = m.east * Math.cos(rad) - m.north * Math.sin(rad);
             if (forward > 1.5) {
-              const fovH = 62 * Math.PI / 180;
-              const focal = (w / 2) / Math.tan(fovH / 2);
+              const fovV = 68 * Math.PI / 180;
+              const focal = (h / 2) / Math.tan(fovV / 2);
               const pitchRad = state.pitch * Math.PI / 180;
-              const yWorld = -state.eyeHeight;
-              const zCam = forward * Math.cos(pitchRad) - yWorld * Math.sin(pitchRad);
-              const yCam = forward * Math.sin(pitchRad) + yWorld * Math.cos(pitchRad);
+              const zCam = forward * Math.cos(pitchRad) - m.up * Math.sin(pitchRad);
+              const yCam = forward * Math.sin(pitchRad) + m.up * Math.cos(pitchRad);
               if (zCam > 0.5) {
                 const sx = (w / 2) + (right / zCam) * focal;
                 const sy = (h / 2) - (yCam / zCam) * focal;
@@ -627,10 +673,9 @@
         }
       });
 
-      // Yakından uzağa sırala ve üst üste binen etiketleri hafifçe kaydır
       pointLabels.sort((a, b) => a.dist - b.dist);
       const placedBoxes = [];
-      pointLabels.slice(0, 12).forEach(lbl => {
+      pointLabels.slice(0, 10).forEach(lbl => {
         const text = `${lbl.name} (${Math.round(lbl.dist)}m)`;
         arCtx.font = 'bold 11px Inter, sans-serif';
         const tw = arCtx.measureText(text).width + 14;
@@ -638,7 +683,6 @@
         let bx = lbl.sx - tw / 2;
         let by = lbl.sy - 32;
 
-        // Çakışma varsa yukarı kaydır
         for (const box of placedBoxes) {
           if (Math.abs(bx - box.x) < (tw + box.w) / 2 && Math.abs(by - box.y) < th + 4) {
             by = box.y - th - 5;
@@ -655,7 +699,6 @@
         arCtx.fill();
         arCtx.stroke();
 
-        // Zemine inen ince işaret çizgisi
         arCtx.beginPath();
         arCtx.moveTo(lbl.sx, by + th);
         arCtx.lineTo(lbl.sx, lbl.sy);
@@ -740,8 +783,8 @@
     });
 
     document.getElementById('btn-demo-start').addEventListener('click', () => {
-      const baseLat = 36.687374;
-      const baseLon = 34.325522;
+      const baseLat = 36.686629;
+      const baseLon = 34.325505;
       state.userLat = baseLat;
       state.userLon = baseLon;
       state.simMode = true;
@@ -751,8 +794,8 @@
           name: 'Boru Aksı (40" DGBH)',
           isAxis: true,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon },
-            { lat: baseLat + 0.0015, lon: baseLon + 0.0003 }
+            { lat: baseLat - 0.0005, lon: baseLon, alt: 0 },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.0003, alt: 0 }
           ]
         },
         {
@@ -760,8 +803,8 @@
           name: 'Sağ İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon + 0.00014 },
-            { lat: baseLat + 0.0015, lon: baseLon + 0.00044 }
+            { lat: baseLat - 0.0005, lon: baseLon + 0.00014, alt: 0 },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.00044, alt: 0 }
           ]
         },
         {
@@ -769,8 +812,8 @@
           name: 'Sol İrtifak Sınırı',
           isAxis: false,
           points: [
-            { lat: baseLat - 0.0005, lon: baseLon - 0.00014 },
-            { lat: baseLat + 0.0015, lon: baseLon + 0.00016 }
+            { lat: baseLat - 0.0005, lon: baseLon - 0.00014, alt: 0 },
+            { lat: baseLat + 0.0018, lon: baseLon + 0.00016, alt: 0 }
           ]
         }
       ];
@@ -825,14 +868,19 @@
       document.getElementById('settings-panel').classList.add('hidden');
     });
 
-    document.getElementById('heading-offset-slider').addEventListener('input', (e) => {
-      state.headingOffset = parseInt(e.target.value, 10);
-      document.getElementById('offset-val').textContent = `${state.headingOffset}°`;
+    document.getElementById('ground-slope-slider').addEventListener('input', (e) => {
+      state.groundSlope = parseFloat(e.target.value);
+      document.getElementById('slope-val').textContent = `${state.groundSlope > 0 ? '+' : ''}${state.groundSlope.toFixed(1)}°`;
     });
 
     document.getElementById('eye-height-slider').addEventListener('input', (e) => {
       state.eyeHeight = parseFloat(e.target.value);
       document.getElementById('height-val').textContent = `${state.eyeHeight.toFixed(1)} m`;
+    });
+
+    document.getElementById('heading-offset-slider').addEventListener('input', (e) => {
+      state.headingOffset = parseInt(e.target.value, 10);
+      document.getElementById('offset-val').textContent = `${state.headingOffset}°`;
     });
 
     document.getElementById('max-range-slider').addEventListener('input', (e) => {
@@ -843,6 +891,22 @@
 
     document.getElementById('toggle-labels').addEventListener('change', (e) => {
       state.showLabels = e.target.checked;
+    });
+
+    document.getElementById('toggle-elevation').addEventListener('change', (e) => {
+      state.useElevation = e.target.checked;
+    });
+
+    document.getElementById('btn-reset-settings').addEventListener('click', () => {
+      state.groundSlope = -2.0;
+      state.eyeHeight = 2.0;
+      state.headingOffset = 0;
+      document.getElementById('ground-slope-slider').value = -2.0;
+      document.getElementById('slope-val').textContent = '-2.0°';
+      document.getElementById('eye-height-slider').value = 2.0;
+      document.getElementById('height-val').textContent = '2.0 m';
+      document.getElementById('heading-offset-slider').value = 0;
+      document.getElementById('offset-val').textContent = '0°';
     });
   </script>
 </body>
